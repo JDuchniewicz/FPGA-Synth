@@ -19,7 +19,6 @@ class Generator:
     
     def generate_sine(self):
         step_size = self.output_max_size // self.table_size
-        fill_loop_size = self.output_width - int(math.log2(self.table_size))
         idx_hex = ""
         out = open(self.args.d, 'w')
 
@@ -43,7 +42,7 @@ class Generator:
 
                 # if have more input values then samples, hold last sample for OUT_WIDTH - log2(NUM_SAMPLES) 
                 i = 1
-                while i <= fill_loop_size:
+                while i < step_size:
                     idx_hex = '{0:0{1}x}'.format((sample * step_size) + i, self.output_width_hex_len)
                 #    print(idx_hex)
                     lhs += ", {0}'h{1}".format(self.output_width, idx_hex)
@@ -51,7 +50,7 @@ class Generator:
 
                 lhs += rhs
                 out.write(lhs)
-                sample += i
+#                sample += i
 
 def main():
     parser = argparse.ArgumentParser()
