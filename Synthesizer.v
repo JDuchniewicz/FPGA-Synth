@@ -19,8 +19,12 @@
 // write a testbench for Synthesizer and test it offline - DONE, looks fine
 
 // KNOWLEDGE:
-// CURRENTLY 3 clock cycles delay until value is valid (delay)
+// CURRENTLY 1 clock cycle delay, cannot be minimalized, demux current input and obtain value back has to work
 // Clock multiplier has to be wired before launching this module
+// SDRAM can be used as buffer for holding data, addressing is by 32 bits - 1 address (check it), obtain memory and map it
+
+// TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
+
 module Synthesizer(clk, data_in, data_out); 
 	
 	input clk;
@@ -28,15 +32,18 @@ module Synthesizer(clk, data_in, data_out);
 	output reg [15:0] data_out; //probably 24?
 	
 	//wire[15:0] freq_in;
-	wire[15:0] signal_out; //width?
+	wire[15:0] a4_phase, a4_sine;
 	
-	dummyA4 a4(.clk(clk), .val_out(signal_out)); //how to wire up more? need a bank system for that
+	sineLUT s_lut(.phase(a4_phase), .val_out(a4_sine));
+	
+	dummyA4 a4(.clk(clk), .phase_out(a4_phase)); //how to wire up more? need a bank system for that
+	
 	
 	always @ (posedge clk) begin
 		case (data_in[15:8])
 			// take care of different midi values
 			
-			8'h3f		:	data_out <= signal_out;
+			8'h3f		:	data_out <= a4_sine;
 			default	:	data_out <= 16'b0;
 		endcase
 	end
