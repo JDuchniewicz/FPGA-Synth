@@ -17,58 +17,58 @@ class Generator:
     def generate(self):
         if 'sine' in self.args.t:
             generate_sine()
-    
+
     def generate_sine(self):
-        step_size = self.output_max_size // self.table_size
-        idx_hex = ""
         out = open(self.args.d, 'w')
         if self.args.f is not False:
-            for sample in range(self.table_size):
-                rad = (sample / self.table_size) * 2 * math.pi
-                sine = math.sin(rad)
-                shifted_sine = sine + 1 # shift up by 1 and multiply by half of range; mapped: -1 = 0x0,  0 = MAX / 2, 1 = MAX
-                sine_hex = '{0:0{1}x}'.format(int((self.output_max_size // 2) * shifted_sine), self.output_width_hex_len) # format specifier
-
-                if self.args.q is not None:
-                   # print(sine_hex)
-                   # print(sine)
-                    idx_hex = '{0:0{1}x}'.format(sample * step_size, self.table_size_hex_len)
-                    #print(idx_hex)
-
-                    # VERILOG does not accept multiple lhs wired to one rhs, group them with coma
-                    lhs = "{0}'h{1}".format(self.output_width, idx_hex)
-                    rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
-
-                    # if have more input values then samples, hold last sample for OUT_WIDTH - log2(NUM_SAMPLES) 
-                    i = 1
-                    while i < step_size:
-                        idx_hex = '{0:0{1}x}'.format((sample * step_size) + i, self.table_size_hex_len)
-                    #    print(idx_hex)
-                        lhs += ", {0}'h{1}".format(self.output_width, idx_hex)
-                        i += 1 
-
-                    lhs += rhs
-                    out.write(lhs)
-                else:
-                    out.write(sine)
-    #                sample += i
+            self.generate_full_sine(out)
         else:
-            print(self.table_size)
-            for sample in range(self.table_size):
-                rad = ((2 * sample + 1) / (2 * self.table_size * 4)) * 2 * math.pi # according to zipCPU, take quarter of full wave
-                sine = math.sin(rad)
-                sine_hex = '{0:0{1}x}'.format(int(self.output_max_size * sine), self.output_width_hex_len) # format specifier
+            self.generate_quarter_sine(out)
 
-                if self.args.q is not None:
-                    idx_hex = '{0:0{1}x}'.format(sample, self.table_size_hex_len)
+    def generate_quarter_sine(self, out):
+        for sample in range(self.table_size):
+            rad = ((2 * sample + 1) / (2 * self.table_size * 4)) * 2 * math.pi # according to zipCPU, take quarter of full wave
+            sine = math.sin(rad)
+            sine_hex = '{0:0{1}x}'.format(int(self.output_max_size * sine), self.output_width_hex_len) # format specifier
 
-                    lhs = "{0}'h{1}".format(self.input_width, idx_hex)
-                    rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
+            if self.args.q is not False:
+                idx_hex = '{0:0{1}x}'.format(sample, self.table_size_hex_len)
 
-                    lhs += rhs
-                    out.write(lhs)
-                else:
-                    out.write(sine)
+                lhs = "{0}'h{1}".format(self.input_width, idx_hex)
+                rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
+
+                lhs += rhs
+                out.write(lhs)
+            else:
+                out.write(str(sine) + '\n')
+
+    def generate_full_sine(self, out):
+        step_size = self.output_max_size // self.table_size
+        for sample in range(self.table_size):
+            rad = (sample / self.table_size) * 2 * math.pi
+            sine = math.sin(rad)
+            shifted_sine = sine + 1 # shift up by 1 and multiply by half of range; mapped: -1 = 0x0,  0 = MAX / 2, 1 = MAX
+            sine_hex = '{0:0{1}x}'.format(int((self.output_max_size // 2) * shifted_sine), self.output_width_hex_len) # format specifier
+
+            if self.args.q is not False:
+                idx_hex = '{0:0{1}x}'.format(sample * step_size, self.table_size_hex_len)
+
+                # VERILOG does not accept multiple lhs wired to one rhs, group them with coma
+                lhs = "{0}'h{1}".format(self.input_width, idx_hex)
+                rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
+
+                # if have more input values then samples, hold last sample for OUT_WIDTH - log2(NUM_SAMPLES) 
+                i = 1
+                while i < step_size:
+                    idx_hex = '{0:0{1}x}'.format((sample * step_size) + i, self.table_size_hex_len)
+                    lhs += ", {0}'h{1}".format(self.input_width, idx_hex)
+                    i += 1 
+
+                lhs += rhs
+                out.write(lhs)
+            else:
+                out.write(str(sine) + '\n')
+    
 
 def main():
     parser = argparse.ArgumentParser()
