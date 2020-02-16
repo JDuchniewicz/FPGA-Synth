@@ -1,6 +1,6 @@
 
 
-module quarter_sine_lut(input[15:0] phase,
+module quarter_sine_lut(input[13:0] phase,
 								output reg[15:0] val_out); //is reg needed here? try removing
 		always @(phase) begin
 			case(phase)

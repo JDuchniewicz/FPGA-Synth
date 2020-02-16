@@ -3,7 +3,7 @@
 module quarter_sine(input clk,
 							input[15:0] phase,
 							output reg[15:0] val_out);
-		reg negate[2];
+		reg negate[1:0];
 		reg[13:0] index; // 2 bits are being used inside this module
 		reg[15:0] lut_sine;
 		wire[15:0] tmp_val;
