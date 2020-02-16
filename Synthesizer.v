@@ -34,7 +34,8 @@ module Synthesizer(clk, data_in, data_out);
 	//wire[15:0] freq_in;
 	wire[15:0] a4_phase, a4_sine;
 	
-	sineLUT s_lut(.phase(a4_phase), .val_out(a4_sine));
+	//sineLUT s_lut(.phase(a4_phase), .val_out(a4_sine));
+	quarter_sine s_lut(.clk(clk), .phase(a4_phase), .val_out(a4_sine));
 	
 	dummyA4 a4(.clk(clk), .phase_out(a4_phase)); //how to wire up more? need a bank system for that
 	
