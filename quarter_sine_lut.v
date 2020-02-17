@@ -1,7 +1,8 @@
 
-
+// precalculated for N = 16834 (quarter) by generate_wave.py
 module quarter_sine_lut(input[13:0] phase,
 								output reg[15:0] val_out); //is reg needed here? try removing
+		initial val_out = 16'b0;
 		always @(phase) begin
 			case(phase)
              14'h000 	:	val_out <= 16'h0003;

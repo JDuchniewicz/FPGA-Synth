@@ -34,6 +34,8 @@ module Synthesizer(clk, data_in, data_out);
 	//wire[15:0] freq_in;
 	wire[15:0] a4_phase, a4_sine;
 	
+	initial data_out = 16'b0;
+	
 	//sineLUT s_lut(.phase(a4_phase), .val_out(a4_sine));
 	quarter_sine s_lut(.clk(clk), .phase(a4_phase), .val_out(a4_sine));
 	
@@ -41,10 +43,10 @@ module Synthesizer(clk, data_in, data_out);
 	
 	
 	always @ (posedge clk) begin
-		case (data_in[15:8])
+		case (data_in[14:8]) // 7 bits for midi val
 			// take care of different midi values
 			
-			8'h3f		:	data_out <= a4_sine;
+			7'h3f		:	data_out <= a4_sine;
 			default	:	data_out <= 16'b0;
 		endcase
 	end

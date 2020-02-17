@@ -12,7 +12,7 @@ module quarter_sine(input clk,
 		always @(posedge clk) begin
 			// clock one
 			negate[0] <= phase[15]; // negate or not
-			index <= phase[14] ? phase[13:0] : ~phase[13:0]; // invert index if 2nd MSB is set
+			index <= phase[14] ? ~phase[13:0] : phase[13:0]; // invert index if 2nd MSB is set
 			
 			// clock two
 			lut_sine <= tmp_val;
