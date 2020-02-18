@@ -35,7 +35,7 @@ class Generator:
                 idx_hex = '{0:0{1}x}'.format(sample, self.table_size_hex_len)
 
                 lhs = "{0}'h{1}".format(self.input_width, idx_hex)
-                rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
+                rhs = " \t:\to_val <= {0}'h{1};\n".format(self.output_width, sine_hex)
 
                 lhs += rhs
                 out.write(lhs)
@@ -55,7 +55,7 @@ class Generator:
 
                 # VERILOG does not accept multiple lhs wired to one rhs, group them with coma
                 lhs = "{0}'h{1}".format(self.input_width, idx_hex)
-                rhs = " \t:\tval_out <= {0}'h{1};\n".format(self.output_width, sine_hex)
+                rhs = " \t:\to_val <= {0}'h{1};\n".format(self.output_width, sine_hex)
 
                 # if have more input values then samples, hold last sample for OUT_WIDTH - log2(NUM_SAMPLES) 
                 i = 1
