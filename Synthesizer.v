@@ -2,26 +2,29 @@
 // In this file will be added all hierarchical processing blocks imported from other places, BDF is just the design file (cannot? make use of it)
 // read up about naming conventions etc, verilog is unwieldy
 
-// TODO: 
-// add the pool of currently available phase accumulator modules
-// refactor a4dummy to be such module
-// write a module which can quickly calculate frequency_step for phase increment (division mitigation)
-
-// write a python script for generation of data - DONE for sine
+// TODO:
 // check bus widths
-// optimize waveform space constraints (store just quarter of full period)
 // finally plug this module into the board and test against real signals
-
-// add 'manager' module to ask for generation of signal from one of free pools
+// add module for reading input from linux and pushing this one just once, then feeding zeroes
 // this module will properly trigger signals in other modules and will trigger effects? via pushbuttons and knobs
+// add module for writing to sdram
+// SPI to DAC - MASH?
 
 // DONE:
 // write a testbench for Synthesizer and test it offline - DONE, looks fine
+// write a python script for generation of data - DONE for sine
+// optimize waveform space constraints (store just quarter of full period)
+// add 'manager' module to ask for generation of signal from one of free pools
+// add the pool of currently available phase accumulator modules
 
 // KNOWLEDGE:
 // CURRENTLY 1 clock cycle delay, cannot be minimalized, demux current input and obtain value back has to work
 // Clock multiplier has to be wired before launching this module
 // SDRAM can be used as buffer for holding data, addressing is by 32 bits - 1 address (check it), obtain memory and map it
+
+// DELAYS
+// 3 cycles sine generation from LUT
+// up to 10 cycles for one phase bank (to be available on output)
 
 // TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
 
@@ -160,63 +163,63 @@ module Synthesizer(input clk,
 			if (w_st0 == 0) begin
 				r_midi0 <= w_midi; // LOOKS like cmd's are redundant, non-zero midi value implies command :)
 				r_cmd0 <= 1;
-			end if (w_st1 == 0) begin
+			end else if (w_st1 == 0) begin
 				r_midi1 <= w_midi;
 				r_cmd1 <= 1;
-			end if (w_st2 == 0) begin
+			end else if (w_st2 == 0) begin
 				r_midi2 <= w_midi;
 				r_cmd2 <= 1;			
-			end if (w_st3 == 0) begin
+			end else if (w_st3 == 0) begin
 				r_midi3 <= w_midi;
 				r_cmd3 <= 1;
-			end if (w_st4 == 0) begin
+			end else if (w_st4 == 0) begin
 				r_midi4 <= w_midi;
 				r_cmd4 <= 1;
-			end if (w_st5 == 0) begin
+			end else if (w_st5 == 0) begin
 				r_midi5 <= w_midi;
 				r_cmd5 <= 1;
-			end if (w_st6 == 0) begin
+			end else if (w_st6 == 0) begin
 				r_midi6 <= w_midi;
 				r_cmd6 <= 1;
-			end if (w_st7 == 0) begin
+			end else if (w_st7 == 0) begin
 				r_midi7 <= w_midi;
 				r_cmd7 <= 1;
-			end if (w_st8 == 0) begin
+			end else if (w_st8 == 0) begin
 				r_midi8 <= w_midi;
 				r_cmd8 <= 1;
-			end if (w_st9 == 0) begin
+			end else if (w_st9 == 0) begin
 				r_midi9 <= w_midi;
 				r_cmd9 <= 1;
-			end
+			end // failure to playback yet another sound should be signalled to user!
 		end else if(w_cmd == 0) begin // STOP, check if any register contains this midi already
-			if (w_st0 == 0 && r_midi0 == w_midi) begin
+			if (w_st0 == 1 && r_midi0 == w_midi) begin
 				r_midi0 <= 7'h7f; // 7 bits '1'
 				r_cmd0 <= 0;
-			end if (w_st1 == 0 && r_midi1 == w_midi) begin
+			end else if (w_st1 == 1 && r_midi1 == w_midi) begin
 				r_midi1 <= 7'h7f;
 				r_cmd1 <= 0;
-			end if (w_st2 == 0 && r_midi2 == w_midi) begin
+			end else if (w_st2 == 1 && r_midi2 == w_midi) begin
 				r_midi2 <= 7'h7f;
 				r_cmd2 <= 0;
-			end if (w_st3 == 0 && r_midi3 == w_midi) begin
+			end else if (w_st3 == 1 && r_midi3 == w_midi) begin
 				r_midi3 <= 7'h7f;
 				r_cmd3 <= 0;
-			end if (w_st4 == 0 && r_midi4 == w_midi) begin
+			end else if (w_st4 == 1 && r_midi4 == w_midi) begin
 				r_midi4 <= 7'h7f;
 				r_cmd4 <= 0;
-			end if (w_st5 == 0 && r_midi5 == w_midi) begin
+			end else if (w_st5 == 1 && r_midi5 == w_midi) begin
 				r_midi5 <= 7'h7f;
 				r_cmd5 <= 0;
-			end if (w_st6 == 0 && r_midi6 == w_midi) begin
+			end else if (w_st6 == 1 && r_midi6 == w_midi) begin
 				r_midi6 <= 7'h7f;
 				r_cmd6 <= 0;
-			end if (w_st7 == 0 && r_midi7 == w_midi) begin
+			end else if (w_st7 == 1 && r_midi7 == w_midi) begin
 				r_midi7 <= 7'h7f;
 				r_cmd7 <= 0;
-			end if (w_st8 == 0 && r_midi8 == w_midi) begin
+			end else if (w_st8 == 1 && r_midi8 == w_midi) begin
 				r_midi8 <= 7'h7f;
 				r_cmd8 <= 0;
-			end if (w_st9 == 0 && r_midi9 == w_midi) begin
+			end else if (w_st9 == 1 && r_midi9 == w_midi) begin
 				r_midi9 <= 7'h7f;
 				r_cmd9 <= 0;
 			end // it looks like latches are inferred each time a comibnatorial path does not set r_midi or r_cmd even if it does not
@@ -227,23 +230,23 @@ module Synthesizer(input clk,
 		// maybe just output values from ones that are not empty?, this will have to be signalled further down the pipeline (size of window?) ask mr Zabołotny
 		if (v_idx == 0 && w_st0 == 1) begin // it may be not valid here yet!!! just knowing it is working
 			o_sine <= w_sine0;
-		end if (v_idx == 1 && w_st1 == 1) begin
+		end else if (v_idx == 1 && w_st1 == 1) begin
 			o_sine <= w_sine1;
-		end if (v_idx == 2 && w_st2 == 1) begin
+		end else if (v_idx == 2 && w_st2 == 1) begin
 			o_sine <= w_sine2;		
-		end if (v_idx == 3 && w_st3 == 1) begin
+		end else if (v_idx == 3 && w_st3 == 1) begin
 			o_sine <= w_sine3;		
-		end if (v_idx == 4 && w_st4 == 1) begin
+		end else if (v_idx == 4 && w_st4 == 1) begin
 			o_sine <= w_sine4;		
-		end if (v_idx == 5 && w_st5 == 1) begin
+		end else if (v_idx == 5 && w_st5 == 1) begin
 			o_sine <= w_sine5;		
-		end if (v_idx == 6 && w_st6 == 1) begin
+		end else if (v_idx == 6 && w_st6 == 1) begin
 			o_sine <= w_sine6;		
-		end if (v_idx == 7 && w_st7 == 1) begin
+		end else if (v_idx == 7 && w_st7 == 1) begin
 			o_sine <= w_sine7;		
-		end if (v_idx == 8 && w_st8 == 1) begin
+		end else if (v_idx == 8 && w_st8 == 1) begin
 			o_sine <= w_sine8;		
-		end if (v_idx == 9 && w_st9 == 1) begin
+		end else if (v_idx == 9 && w_st9 == 1) begin
 			o_sine <= w_sine9;
 		end
 		if (v_idx == 9)

@@ -2,6 +2,7 @@
 
 //TODO: clock enable has to be given because it cannot be always enabled
 // for now just A4 (440Hz) generating module (for phase calculation) 
+/*
 module dummyA4(clk, phase_out); // maybe different style of coding, everything in module declaration?
 	input clk;
 	output reg [15:0] phase_out; // width depends on samples N
@@ -14,6 +15,7 @@ module dummyA4(clk, phase_out); // maybe different style of coding, everything i
 	end
 	
 endmodule
+*/
 
 /* Explanation to myself:
 	Assuming 16 bits on input to LUT(2 bits taken for logic calc) and 16 bits of output of LUT (0-65535)
@@ -33,7 +35,7 @@ module phase_bank(input clk,
 		initial o_state = IDLE;
 		initial o_phase = 16'b0;
 		
-		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw));
+		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw)); // will it calculate on time?
 		
 		always @(posedge clk) begin
 			if (!o_state && i_cmd) begin// IDLE and run
@@ -183,8 +185,7 @@ module tuning_word_lut(input[6:0] i_midi,
             7'h7c 	:	o_tw <= 16'h466a;
             7'h7d 	:	o_tw <= 16'h4a9a;
             7'h7e 	:	o_tw <= 16'h4f09;
-            7'h7f 	:	o_tw <= 16'h53bc;
-				default 	:	o_tw <= 16'h0000;
+				default 	:	o_tw <= 16'h0000; // h7f is INVALID value
 			endcase
 		end	
 endmodule
