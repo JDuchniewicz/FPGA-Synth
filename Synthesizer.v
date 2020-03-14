@@ -25,6 +25,8 @@
 // DELAYS
 // 3 cycles sine generation from LUT
 // up to 10 cycles for one phase bank (to be available on output)
+// 2 cycles delay between valid input
+// after putting valid value, input 0s to prevent activation of new bank on next clock cycle
 
 // TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
 
