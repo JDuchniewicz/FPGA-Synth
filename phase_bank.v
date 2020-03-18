@@ -33,7 +33,7 @@ module phase_bank(input clk,
 		wire[15:0] w_tw; //tuning word
 		
 		initial o_state = IDLE;
-		initial o_phase = 16'b0;
+		initial o_phase = 16'b0; // TEST for bigger phase accumulator, this one might be to small/ 32 bits?
 		
 		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw)); // will it calculate on time?
 		

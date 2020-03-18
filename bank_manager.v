@@ -21,7 +21,7 @@
 // CURRENTLY 1 clock cycle delay, cannot be minimalized, demux current input and obtain value back has to work
 // Clock multiplier has to be wired before launching this module
 // SDRAM can be used as buffer for holding data, addressing is by 32 bits - 1 address (check it), obtain memory and map it
-// i_data 16'b0'0000000'xxxxxxxx is STOP_ALL cmd - there is no MIDI 0 available
+// i_data 16'b0'1111111'xxxxxxxx is STOP_ALL cmd - there is no MIDI 0 available
 // DELAYS
 // 3 cycles sine generation from LUT
 // up to 10 cycles for one phase bank (to be available on output)
@@ -30,9 +30,9 @@
 
 // TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
 
-module Synthesizer(input clk,
-						input[15:0] i_data,
-						output reg[15:0] o_sine); 
+module bank_manager(input clk,
+						 input[15:0] i_data,
+						 output reg[15:0] o_signal); 
 						
 	wire[15:0] w_phase0, w_phase1, w_phase2, w_phase3, w_phase4,
 				  w_phase5, w_phase6, w_phase7, w_phase8, w_phase9,
@@ -56,13 +56,13 @@ module Synthesizer(input clk,
 	wire[7:0]  w_vel;
 	
 	initial v_idx = 0;
-	initial o_sine = 16'b0;
+	initial o_signal = 16'b0;
 	
 	assign w_cmd = i_data[15]; // maybe there should be more commands?
 	assign w_midi = i_data[14:8];
 	assign w_vel = i_data[7:0]; // this is passed further to waveshaping modules, route it out?
 	
-	quarter_sine 
+	quarter_sine // there should be more LUT's for more waveforms
 					slut_0(.clk(clk), .i_phase(w_phase0), .o_val(w_sine0)),
 					slut_1(.clk(clk), .i_phase(w_phase1), .o_val(w_sine1)),
 					slut_2(.clk(clk), .i_phase(w_phase2), .o_val(w_sine2)),
@@ -194,7 +194,7 @@ module Synthesizer(input clk,
 				r_cmd9 <= 1;
 			end // failure to playback yet another sound should be signalled to user!
 		end else if(w_cmd == 0) begin // STOP, check if any register contains this midi already
-			if (w_midi == 7'h0) begin
+			if (w_midi == 7'h7f) begin // STOP_ALL
 				r_midi0 <= 7'h7f;
 				r_midi1 <= 7'h7f;
 				r_midi2 <= 7'h7f;
@@ -252,25 +252,25 @@ module Synthesizer(input clk,
 		// loop around the banks and output a value from one of them, if some are empty do nothing for now (this should be optimized)
 		// maybe just output values from ones that are not empty?, this will have to be signalled further down the pipeline (size of window?) ask mr Zabołotny
 		if (v_idx == 0 && w_st0 == 1) begin // it may be not valid here yet!!! just knowing it is working
-			o_sine <= w_sine0;
+			o_signal <= w_sine0;
 		end else if (v_idx == 1 && w_st1 == 1) begin
-			o_sine <= w_sine1;
+			o_signal <= w_sine1;
 		end else if (v_idx == 2 && w_st2 == 1) begin
-			o_sine <= w_sine2;		
+			o_signal <= w_sine2;		
 		end else if (v_idx == 3 && w_st3 == 1) begin
-			o_sine <= w_sine3;		
+			o_signal <= w_sine3;		
 		end else if (v_idx == 4 && w_st4 == 1) begin
-			o_sine <= w_sine4;		
+			o_signal <= w_sine4;		
 		end else if (v_idx == 5 && w_st5 == 1) begin
-			o_sine <= w_sine5;		
+			o_signal <= w_sine5;		
 		end else if (v_idx == 6 && w_st6 == 1) begin
-			o_sine <= w_sine6;		
+			o_signal <= w_sine6;		
 		end else if (v_idx == 7 && w_st7 == 1) begin
-			o_sine <= w_sine7;		
+			o_signal <= w_sine7;		
 		end else if (v_idx == 8 && w_st8 == 1) begin
-			o_sine <= w_sine8;		
+			o_signal <= w_sine8;		
 		end else if (v_idx == 9 && w_st9 == 1) begin
-			o_sine <= w_sine9;
+			o_signal <= w_sine9;
 		end
 		if (v_idx == 9)
 			v_idx <= 0;

@@ -1,8 +1,8 @@
-// Testbench for Synthesizer module
+// Testbench for bank_manager module
 
 `timescale 1ns/1ps
 
-module Synthesizer_tb;
+module bank_manager_tb;
 	// in
 	reg clk;
 	reg [15:0] r_data;
@@ -10,9 +10,9 @@ module Synthesizer_tb;
 	// out
 	wire [15:0] w_sine;
 	
-	Synthesizer synthesizer(.clk(clk), 
-								.i_data(r_data), 
-								.o_sine(w_sine));
+	bank_manager bm(.clk(clk), 
+						 .i_data(r_data), 
+						 .o_signal(w_sine));
 
 	initial begin
 		clk = 0;
@@ -95,7 +95,7 @@ module Synthesizer_tb;
 	r_data = 16'b0;
 	#360 								// total 380ns
 	$display("[%t] Turn off all", $time);
-	r_data = 16'b0_0000000_0000_0000; // STOP_ALL
+	r_data = 16'b0_1111111_0000_0000; // STOP_ALL
 	#150								// total 150ns
 	$display("[%t] Done", $time);
 	$finish; // not testing velocity for now
