@@ -21,7 +21,7 @@
 // CURRENTLY 1 clock cycle delay, cannot be minimalized, demux current input and obtain value back has to work
 // Clock multiplier has to be wired before launching this module
 // SDRAM can be used as buffer for holding data, addressing is by 32 bits - 1 address (check it), obtain memory and map it
-
+// i_data 16'b0'0000000'xxxxxxxx is STOP_ALL cmd - there is no MIDI 0 available
 // DELAYS
 // 3 cycles sine generation from LUT
 // up to 10 cycles for one phase bank (to be available on output)
@@ -194,7 +194,28 @@ module Synthesizer(input clk,
 				r_cmd9 <= 1;
 			end // failure to playback yet another sound should be signalled to user!
 		end else if(w_cmd == 0) begin // STOP, check if any register contains this midi already
-			if (w_st0 == 1 && r_midi0 == w_midi) begin
+			if (w_midi == 7'h0) begin
+				r_midi0 <= 7'h7f;
+				r_midi1 <= 7'h7f;
+				r_midi2 <= 7'h7f;
+				r_midi3 <= 7'h7f;
+				r_midi4 <= 7'h7f;
+				r_midi5 <= 7'h7f;
+				r_midi6 <= 7'h7f;
+				r_midi7 <= 7'h7f;
+				r_midi8 <= 7'h7f;
+				r_midi9 <= 7'h7f;
+				r_cmd0 <= 0;
+				r_cmd1 <= 0;
+				r_cmd2 <= 0;
+				r_cmd3 <= 0;
+				r_cmd4 <= 0;
+				r_cmd5 <= 0;
+				r_cmd6 <= 0;
+				r_cmd7 <= 0;
+				r_cmd8 <= 0;
+				r_cmd9 <= 0;
+			end else if (w_st0 == 1 && r_midi0 == w_midi) begin
 				r_midi0 <= 7'h7f; // 7 bits '1'
 				r_cmd0 <= 0;
 			end else if (w_st1 == 1 && r_midi1 == w_midi) begin

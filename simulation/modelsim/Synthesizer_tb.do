@@ -9,4 +9,4 @@ view objects
 view wave
 do {wave.do}
 log -r *
-run 2200ns
+run 2500ns

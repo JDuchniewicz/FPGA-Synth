@@ -94,6 +94,9 @@ module Synthesizer_tb;
 	#10
 	r_data = 16'b0;
 	#360 								// total 380ns
+	$display("[%t] Turn off all", $time);
+	r_data = 16'b0_0000000_0000_0000; // STOP_ALL
+	#150								// total 150ns
 	$display("[%t] Done", $time);
 	$finish; // not testing velocity for now
 	end
