@@ -2,11 +2,11 @@
 
 module quarter_sine(input clk,
 							input[15:0] i_phase,
-							output reg[15:0] o_val);
+							output reg signed[15:0] o_val);
 		reg r_negate[1:0];
 		reg[13:0] r_index; // 2 bits are being used inside this module
-		reg[15:0] r_lut_sine;
-		wire[15:0] w_tmp_val;
+		reg signed[15:0] r_lut_sine;
+		wire signed[15:0] w_tmp_val;
 		
 		quarter_sine_lut lut(.i_phase(r_index), .o_val(w_tmp_val));
 		always @(posedge clk) begin

@@ -37,12 +37,13 @@
 
 module bank_manager(input clk,
 						 input[15:0] i_data,
-						 output reg[15:0] o_signal); 
+						 output reg signed[15:0] o_signal); 
 						
 	wire[15:0] w_phase0, w_phase1, w_phase2, w_phase3, w_phase4,
-				  w_phase5, w_phase6, w_phase7, w_phase8, w_phase9,
-				  w_sine0, w_sine1, w_sine2, w_sine3, w_sine4, 
-				  w_sine5, w_sine6, w_sine7, w_sine8, w_sine9;
+				  w_phase5, w_phase6, w_phase7, w_phase8, w_phase9;
+				  
+	wire signed[15:0] w_sine0, w_sine1, w_sine2, w_sine3, w_sine4, 
+							w_sine5, w_sine6, w_sine7, w_sine8, w_sine9;
 				  
 	wire		  w_st0, w_st1, w_st2, w_st3, w_st4,
 				  w_st5, w_st6, w_st7, w_st8, w_st9;
