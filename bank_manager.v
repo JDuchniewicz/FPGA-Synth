@@ -10,6 +10,11 @@
 // add module for writing to sdram
 // SPI to DAC - MASH?
 
+// REFACTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// add concept of pipeline, move all that can be moved there and perform signalling generation etc from here
+// here should remain only the part responsible for signal samples generation each cycle and signalling proper pipelines, registers that tell what their state is
+// should be inside, along with midi stuff, filtering is done per pipeline and final signal of pipeline is to be delivered by an out reg by itself
+
 // DONE:
 // write a testbench for Synthesizer and test it offline - DONE, looks fine
 // write a python script for generation of data - DONE for sine
@@ -85,81 +90,7 @@ module bank_manager(input clk,
 					pb_7(.clk(clk), .i_cmd(r_cmd7), .i_midi(r_midi7), .o_state(w_st7), .o_phase(w_phase7)), 
 					pb_8(.clk(clk), .i_cmd(r_cmd8), .i_midi(r_midi8), .o_state(w_st8), .o_phase(w_phase8)),
 					pb_9(.clk(clk), .i_cmd(r_cmd9), .i_midi(r_midi9), .o_state(w_st9), .o_phase(w_phase9));
-	
-	// output value from different bank every cycle until banks have ended
-	// val_out is written dependent on bank_idx
-	// just one command may be served at one cycle
-	/* // THIS CREATES LATCHING PROBLEMS
-	always @* begin
-		// they should be initialized???
-		if (w_cmd == 1) begin // START, find free bank and signal to process
-			if (w_st0 == 0) begin
-				r_midi0 = w_midi; // LOOKS like cmd's are redundant, non-zero midi value implies command :)
-				r_cmd0 = 1;
-			end if (w_st1 == 0) begin
-				r_midi1 = w_midi;
-				r_cmd1 = 1;
-			end if (w_st2 == 0) begin
-				r_midi2 = w_midi;
-				r_cmd2 = 1;			
-			end if (w_st3 == 0) begin
-				r_midi3 = w_midi;
-				r_cmd3 = 1;
-			end if (w_st4 == 0) begin
-				r_midi4 = w_midi;
-				r_cmd4 = 1;
-			end if (w_st5 == 0) begin
-				r_midi5 = w_midi;
-				r_cmd5 = 1;
-			end if (w_st6 == 0) begin
-				r_midi6 = w_midi;
-				r_cmd6 = 1;
-			end if (w_st7 == 0) begin
-				r_midi7 = w_midi;
-				r_cmd7 = 1;
-			end if (w_st8 == 0) begin
-				r_midi8 = w_midi;
-				r_cmd8 = 1;
-			end if (w_st9 == 0) begin
-				r_midi9 = w_midi;
-				r_cmd9 = 1;
-			end
-		end else if(w_cmd == 0) begin // STOP, check if any register contains this midi already
-			if (w_st0 == 0 && r_midi0 == w_midi) begin
-				r_midi0 = 7'h7f; // 7 bits '1'
-				r_cmd0 = 0;
-			end if (w_st1 == 0 && r_midi1 == w_midi) begin
-				r_midi1 = 7'h7f;
-				r_cmd1 = 0;
-			end if (w_st2 == 0 && r_midi2 == w_midi) begin
-				r_midi2 = 7'h7f;
-				r_cmd2 = 0;
-			end if (w_st3 == 0 && r_midi3 == w_midi) begin
-				r_midi3 = 7'h7f;
-				r_cmd3 = 0;
-			end if (w_st4 == 0 && r_midi4 == w_midi) begin
-				r_midi4 = 7'h7f;
-				r_cmd4 = 0;
-			end if (w_st5 == 0 && r_midi5 == w_midi) begin
-				r_midi5 = 7'h7f;
-				r_cmd5 = 0;
-			end if (w_st6 == 0 && r_midi6 == w_midi) begin
-				r_midi6 = 7'h7f;
-				r_cmd6 = 0;
-			end if (w_st7 == 0 && r_midi7 == w_midi) begin
-				r_midi7 = 7'h7f;
-				r_cmd7 = 0;
-			end if (w_st8 == 0 && r_midi8 == w_midi) begin
-				r_midi8 = 7'h7f;
-				r_cmd8 = 0;
-			end if (w_st9 == 0 && r_midi9 == w_midi) begin
-				r_midi9 = 7'h7f;
-				r_cmd9 = 0;
-			end // it looks like latches are inferred each time a comibnatorial path does not set r_midi or r_cmd even if it does not
-			// use it, becasue of that they have to be set in every conditional path???!
-		end
-	end
-*/
+
 	always @ (posedge clk) begin
 		if (w_cmd == 1) begin // START, find free bank and signal to process
 			if (w_st0 == 0) begin

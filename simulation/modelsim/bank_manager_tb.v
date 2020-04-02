@@ -8,11 +8,11 @@ module bank_manager_tb;
 	reg [15:0] r_data;
 	
 	// out
-	wire [15:0] w_sine;
+	wire [15:0] w_signal;
 	
 	bank_manager bm(.clk(clk), 
 						 .i_data(r_data), 
-						 .o_signal(w_sine));
+						 .o_signal(w_signal));
 
 	initial begin
 		clk = 0;

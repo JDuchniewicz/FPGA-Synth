@@ -58,7 +58,7 @@ module tuning_word_lut(input[6:0] i_midi,
 		
 		always @(i_midi) begin
 			case(i_midi)
-				7'h00 	:	o_tw <= 16'h000e;
+				7'h00 	:	o_tw <= 16'h000e; // should 00 be invalid or 7f? 
             7'h01 	:	o_tw <= 16'h000f;
             7'h02 	:	o_tw <= 16'h0010;
             7'h03 	:	o_tw <= 16'h0011;
