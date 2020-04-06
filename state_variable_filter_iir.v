@@ -1,4 +1,4 @@
-// State variable filter based on Andrew Simper's SVF whitepaper https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
+	// State variable filter based on Andrew Simper's SVF whitepaper https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
 // this filter is hardwired to being a lowpass filter only (for now)
 
@@ -6,7 +6,7 @@ module state_variable_filter_iir(input clk,
 											input rst,
 											input ena, // kick it 
 											input[6:0] i_midi,
-											input signed[15:0] i_data, // SIGNED OR NOT SIGNED? depending on implementation of LUT
+											input signed[15:0] i_data,
 											output signed[15:0] o_filtered // == v2
 											);
 											// IT is crucial that I check how to synchronise this module with the rest, for now either producer makes a buffer of values?, or this module, filter signals only when it has finished, or just look how many cycles of latency there are, -> probably not a good idea
@@ -16,13 +16,17 @@ module state_variable_filter_iir(input clk,
 	wire signed[34:0] a1, a2, a3;
 	reg run;
 	reg [2:0] state;
-	reg signed[64:0] mR_0, mR_1, mR_2, mR_3; //init them later + 1 bcs multiplication
 	
+	wire signed[64:0] mR_0, mR_1, mR_2, mR_3; //init them later + 1 bcs multiplication
 	wire signed[34:0] w_extended_i_data;
 	
-	assign w_extended_i_data = {{3{i_data[15]}}, i_data[14:0] << 16};
+	assign w_extended_i_data = {{3{i_data[15]}}, {i_data[14:0]}, 18'b0};
 	assign o_filtered = {v2[34], v2[31:17]}; // cut out bits because some are in Q2.31, copy sign bit and shift just Q0.15 part
 
+		
+	reg[4:0] 		d0, d1, d2, d3, d4, d5, d6, d7; //dummy registeres
+	wire[14:0] 		dm0, dm1, dm2, dm3;//dummy wires for driving the multipliers (cannot be left floating)
+	
 	initial begin
 		v1 = 35'b0;
 		v2 = 35'b0;
@@ -32,6 +36,16 @@ module state_variable_filter_iir(input clk,
 		
 		run = 1'b0;
 		state = 3'b0;
+		
+		// dummy registers need to be initialized as well
+		d0 = 5'b0;
+		d1 = 5'b0;
+		d2 = 5'b0;
+		d3 = 5'b0;
+		d4 = 5'b0;
+		d5 = 5'b0;
+		d6 = 5'b0;
+		d7 = 5'b0;
 	end 
 	
 	coefficients_lut lut(.i_midi(i_midi), 
@@ -39,10 +53,10 @@ module state_variable_filter_iir(input clk,
 	.o_a2(a2), 
 	.o_a3(a3));
 	lpm_multiplier 
-					mult0(.dataa(a1), .datab(ic1eq), .result(mR_0)),
-					mult1(.dataa(a2), .datab(v3), .result(mR_1)),
-					mult2(.dataa(a2), .datab(ic1eq), .result(mR_2)),
-					mult3(.dataa(a3), .datab(v3), .result(mR_3));
+					mult0(.dataa({d0 ,a1}), .datab({d1, ic1eq}), .result({dm0, mR_0})),
+					mult1(.dataa({d2, a2}), .datab({d3, v3}), .result({dm1, mR_1})),
+					mult2(.dataa({d4, a2}), .datab({d5, ic1eq}), .result({dm2, mR_2})),
+					mult3(.dataa({d6, a3}), .datab({d7, v3}), .result({dm3, mR_3}));
 	
 	/* 1. Initial calc -> coefficients
 			aa) g -> LUT
@@ -76,7 +90,7 @@ module state_variable_filter_iir(input clk,
 	always @ (posedge clk) begin
 		if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
 			v2 <= 35'b0; // output receive 0
-		else if (ena) begin // just received new signal, calc coeff
+		else if (ena && !run) begin // just received new signal, calc coeff (!run will trigger it to loop as long as enable is not on)
 			run <= 1'b1;
 			state <= 3'b0; //check this width, it must be adjusted to obtain proper results
 		end else if (run) begin
