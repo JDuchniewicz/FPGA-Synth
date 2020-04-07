@@ -1,6 +1,7 @@
 	// State variable filter based on Andrew Simper's SVF whitepaper https://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf
 
 // this filter is hardwired to being a lowpass filter only (for now)
+// in 3 cycles of delay it calculates proper output
 
 module state_variable_filter_iir(input clk,
 											input rst,
@@ -73,7 +74,7 @@ module state_variable_filter_iir(input clk,
 			// careful about operations order now, be sure to check which finish first
 	*/
 	// Reset logic
-	always @ (posedge clk) begin // reset should be async? or posedge rst?
+	always @ (posedge clk or posedge rst) begin // reset should be async? or posedge rst?
 		if (rst) begin
 			v1 <= 35'b0;
 			v2 <= 35'b0;
@@ -90,7 +91,7 @@ module state_variable_filter_iir(input clk,
 	always @ (posedge clk) begin
 		if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
 			v2 <= 35'b0; // output receive 0
-		else if (ena && !run) begin // just received new signal, calc coeff (!run will trigger it to loop as long as enable is not on)
+		else if (ena && !run && !rst) begin // just received new signal, calc coeff (!run will trigger it to loop as long as enable is not on)
 			run <= 1'b1;
 			state <= 3'b0; //check this width, it must be adjusted to obtain proper results
 		end else if (run) begin
