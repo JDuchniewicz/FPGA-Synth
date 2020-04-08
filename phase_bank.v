@@ -24,28 +24,20 @@ endmodule
 */
 
 module phase_bank(input clk,
-						input i_cmd,
 						input[6:0] i_midi,
-						output reg o_state,
 						output reg[15:0] o_phase);
 						
-		localparam IDLE = 1'b0, RUNNING = 1'b1;
 		wire[15:0] w_tw; //tuning word
 		
-		initial o_state = IDLE;
 		initial o_phase = 16'b0; // TEST for bigger phase accumulator, this one might be to small/ 32 bits?
 		
-		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw)); // will it calculate on time?
+		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw));
 		
 		always @(posedge clk) begin
-			if (!o_state && i_cmd) begin// IDLE and run
-				// calc tuning word
-				o_state <= RUNNING;
-			end else if (o_state && !i_cmd) begin // RUNNING and stop
-				o_phase <= 16'b0;
-				o_state <= IDLE;
-			end else if (o_state && i_cmd) begin// RUNNING and RUN
+			if (i_midi !== 7'h0) begin
 				o_phase <= o_phase + w_tw;
+			end else begin
+				o_phase <= 0;
 			end
 		end
 						
@@ -58,7 +50,6 @@ module tuning_word_lut(input[6:0] i_midi,
 		
 		always @(i_midi) begin
 			case(i_midi)
-				7'h00 	:	o_tw <= 16'h000e; // should 00 be invalid or 7f? 
             7'h01 	:	o_tw <= 16'h000f;
             7'h02 	:	o_tw <= 16'h0010;
             7'h03 	:	o_tw <= 16'h0011;
@@ -185,7 +176,8 @@ module tuning_word_lut(input[6:0] i_midi,
             7'h7c 	:	o_tw <= 16'h466a;
             7'h7d 	:	o_tw <= 16'h4a9a;
             7'h7e 	:	o_tw <= 16'h4f09;
-				default 	:	o_tw <= 16'h0000; // h7f is INVALID value
+				7'h7f 	:	o_tw <= 16'h53bc;
+				default 	:	o_tw <= 16'h0000; // h00 is MIDI 0 value
 			endcase
 		end	
 endmodule

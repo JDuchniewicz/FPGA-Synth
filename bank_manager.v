@@ -38,171 +38,180 @@
 module bank_manager(input clk,
 						 input[15:0] i_data,
 						 output reg signed[15:0] o_signal); 
-						
-	wire[15:0] w_phase0, w_phase1, w_phase2, w_phase3, w_phase4,
-				  w_phase5, w_phase6, w_phase7, w_phase8, w_phase9;
-				  
-	wire signed[15:0] w_sine0, w_sine1, w_sine2, w_sine3, w_sine4, 
-							w_sine5, w_sine6, w_sine7, w_sine8, w_sine9;
-				  
-	wire		  w_st0, w_st1, w_st2, w_st3, w_st4,
-				  w_st5, w_st6, w_st7, w_st8, w_st9;
-				  
-	reg 		  r_cmd0, r_cmd1, r_cmd2, r_cmd3, r_cmd4,
-				  r_cmd5, r_cmd6, r_cmd7, r_cmd8, r_cmd9;
+						 
+	localparam IDLE = 2'b00, BSY = 2'b01, RDY = 2'b10;					
+	
+	wire[1:0] w_st0, w_st1, w_st2, w_st3, w_st4,
+				 w_st5, w_st6, w_st7, w_st8, w_st9;
+				 
+	reg[15:0] r_data0, r_data1, r_data2, r_data3, r_data4,
+				 r_data5, r_data6, r_data7, r_data8, r_data9;
+				 
+	wire signed[15:0] w_signal0, w_signal1, w_signal2, w_signal3, w_signal4,
+							w_signal5, w_signal6, w_signal7, w_signal8, w_signal9;
 				  
 	reg[6:0]   r_midi0, r_midi1, r_midi2, r_midi3, r_midi4,
 				  r_midi5, r_midi6, r_midi7, r_midi8, r_midi9;
 				  
+	reg rst;
+				  
 	integer v_idx;
 	
-	// should it be done? CHECK WHICH SHOULD BE REGISTERS?
 	wire 		  w_cmd;
 	wire[6:0]  w_midi;
-	wire[7:0]  w_vel;
-	
-	initial v_idx = 0;
-	initial o_signal = 16'b0;
 	
 	assign w_cmd = i_data[15]; // maybe there should be more commands?
 	assign w_midi = i_data[14:8];
-	assign w_vel = i_data[7:0]; // this is passed further to waveshaping modules, route it out?
 	
-	quarter_sine // there should be more LUT's for more waveforms
-					slut_0(.clk(clk), .i_phase(w_phase0), .o_val(w_sine0)),
-					slut_1(.clk(clk), .i_phase(w_phase1), .o_val(w_sine1)),
-					slut_2(.clk(clk), .i_phase(w_phase2), .o_val(w_sine2)),
-					slut_3(.clk(clk), .i_phase(w_phase3), .o_val(w_sine3)),
-					slut_4(.clk(clk), .i_phase(w_phase4), .o_val(w_sine4)),
-					slut_5(.clk(clk), .i_phase(w_phase5), .o_val(w_sine5)),
-					slut_6(.clk(clk), .i_phase(w_phase6), .o_val(w_sine6)),
-					slut_7(.clk(clk), .i_phase(w_phase7), .o_val(w_sine7)),
-					slut_8(.clk(clk), .i_phase(w_phase8), .o_val(w_sine8)),
-					slut_9(.clk(clk), .i_phase(w_phase9), .o_val(w_sine9));
+	pipeline
+				p0(.clk(clk), .rst(rst), .i_data(r_data0), .o_state(w_st0), .o_signal(w_signal0)),
+				p1(.clk(clk), .rst(rst), .i_data(r_data1), .o_state(w_st1), .o_signal(w_signal1)),
+				p2(.clk(clk), .rst(rst), .i_data(r_data2), .o_state(w_st2), .o_signal(w_signal2)),
+				p3(.clk(clk), .rst(rst), .i_data(r_data3), .o_state(w_st3), .o_signal(w_signal3)),
+				p4(.clk(clk), .rst(rst), .i_data(r_data4), .o_state(w_st4), .o_signal(w_signal4)),
+				p5(.clk(clk), .rst(rst), .i_data(r_data5), .o_state(w_st5), .o_signal(w_signal5)),
+				p6(.clk(clk), .rst(rst), .i_data(r_data6), .o_state(w_st6), .o_signal(w_signal6)),
+				p7(.clk(clk), .rst(rst), .i_data(r_data7), .o_state(w_st7), .o_signal(w_signal7)),
+				p8(.clk(clk), .rst(rst), .i_data(r_data8), .o_state(w_st8), .o_signal(w_signal8)),
+				p9(.clk(clk), .rst(rst), .i_data(r_data9), .o_state(w_st9), .o_signal(w_signal9));
+				
+	initial begin
+		v_idx = 0;
+		o_signal = 16'b0;
+		rst = 1'b0;
+		
+		r_data0 = 16'b0;
+		r_data1 = 16'b0;
+		r_data2 = 16'b0;
+		r_data3 = 16'b0;
+		r_data4 = 16'b0;
+		r_data5 = 16'b0;
+		r_data6 = 16'b0;
+		r_data7 = 16'b0;
+		r_data8 = 16'b0;
+		r_data9 = 16'b0;
+		
+		r_midi0 = 7'b0;
+		r_midi1 = 7'b0;
+		r_midi2 = 7'b0;
+		r_midi3 = 7'b0;
+		r_midi4 = 7'b0;
+		r_midi5 = 7'b0;
+		r_midi6 = 7'b0;
+		r_midi7 = 7'b0;
+		r_midi8 = 7'b0;
+		r_midi9 = 7'b0;
+	end
 	
-	phase_bank 
-					pb_0(.clk(clk), .i_cmd(r_cmd0), .i_midi(r_midi0), .o_state(w_st0), .o_phase(w_phase0)), 
-					pb_1(.clk(clk), .i_cmd(r_cmd1), .i_midi(r_midi1), .o_state(w_st1), .o_phase(w_phase1)), 
-					pb_2(.clk(clk), .i_cmd(r_cmd2), .i_midi(r_midi2), .o_state(w_st2), .o_phase(w_phase2)), 
-					pb_3(.clk(clk), .i_cmd(r_cmd3), .i_midi(r_midi3), .o_state(w_st3), .o_phase(w_phase3)),
-					pb_4(.clk(clk), .i_cmd(r_cmd4), .i_midi(r_midi4), .o_state(w_st4), .o_phase(w_phase4)), 
-					pb_5(.clk(clk), .i_cmd(r_cmd5), .i_midi(r_midi5), .o_state(w_st5), .o_phase(w_phase5)), 
-					pb_6(.clk(clk), .i_cmd(r_cmd6), .i_midi(r_midi6), .o_state(w_st6), .o_phase(w_phase6)), 
-					pb_7(.clk(clk), .i_cmd(r_cmd7), .i_midi(r_midi7), .o_state(w_st7), .o_phase(w_phase7)), 
-					pb_8(.clk(clk), .i_cmd(r_cmd8), .i_midi(r_midi8), .o_state(w_st8), .o_phase(w_phase8)),
-					pb_9(.clk(clk), .i_cmd(r_cmd9), .i_midi(r_midi9), .o_state(w_st9), .o_phase(w_phase9));
-
+	// bank manager should ping each pipeline to do its work
+	// and at proper intervals collect input from them
+	// it should give out a signal to the synthesizer top, which at a different clock will sample them to DAC
+	
+	// Write new tests, continue with creating elements of the pipeline, for now just try to issue a signal to enter it and exit it
+	// then ADSR
+	
 	always @ (posedge clk) begin
-		if (w_cmd == 1) begin // START, find free bank and signal to process
-			if (w_st0 == 0) begin
-				r_midi0 <= w_midi; // LOOKS like cmd's are redundant, non-zero midi value implies command :)
-				r_cmd0 <= 1;
-			end else if (w_st1 == 0) begin
+		if (w_cmd == 1) begin // START, find free bank and signal to pipeline
+			if (w_st0 == IDLE) begin
+				r_midi0 <= w_midi;
+				r_data0 <= i_data;
+			end else if (w_st1 == IDLE) begin
 				r_midi1 <= w_midi;
-				r_cmd1 <= 1;
-			end else if (w_st2 == 0) begin
+				r_data1 <= i_data;
+			end else if (w_st2 == IDLE) begin
 				r_midi2 <= w_midi;
-				r_cmd2 <= 1;			
-			end else if (w_st3 == 0) begin
+				r_data2 <= i_data;			
+			end else if (w_st3 == IDLE) begin
 				r_midi3 <= w_midi;
-				r_cmd3 <= 1;
-			end else if (w_st4 == 0) begin
+				r_data3 <= i_data;
+			end else if (w_st4 == IDLE) begin
 				r_midi4 <= w_midi;
-				r_cmd4 <= 1;
-			end else if (w_st5 == 0) begin
+				r_data4 <= i_data;
+			end else if (w_st5 == IDLE) begin
 				r_midi5 <= w_midi;
-				r_cmd5 <= 1;
-			end else if (w_st6 == 0) begin
+				r_data5 <= i_data;
+			end else if (w_st6 == IDLE) begin
 				r_midi6 <= w_midi;
-				r_cmd6 <= 1;
-			end else if (w_st7 == 0) begin
+				r_data6 <= i_data;
+			end else if (w_st7 == IDLE) begin
 				r_midi7 <= w_midi;
-				r_cmd7 <= 1;
-			end else if (w_st8 == 0) begin
+				r_data7 <= i_data;
+			end else if (w_st8 == IDLE) begin
 				r_midi8 <= w_midi;
-				r_cmd8 <= 1;
-			end else if (w_st9 == 0) begin
+				r_data8 <= i_data;
+			end else if (w_st9 == IDLE) begin
 				r_midi9 <= w_midi;
-				r_cmd9 <= 1;
+				r_data9 <= i_data;
 			end // failure to playback yet another sound should be signalled to user!
 		end else if(w_cmd == 0) begin // STOP, check if any register contains this midi already
 			if (w_midi == 7'h7f) begin // STOP_ALL
-				r_midi0 <= 7'h7f;
-				r_midi1 <= 7'h7f;
-				r_midi2 <= 7'h7f;
-				r_midi3 <= 7'h7f;
-				r_midi4 <= 7'h7f;
-				r_midi5 <= 7'h7f;
-				r_midi6 <= 7'h7f;
-				r_midi7 <= 7'h7f;
-				r_midi8 <= 7'h7f;
-				r_midi9 <= 7'h7f;
-				r_cmd0 <= 0;
-				r_cmd1 <= 0;
-				r_cmd2 <= 0;
-				r_cmd3 <= 0;
-				r_cmd4 <= 0;
-				r_cmd5 <= 0;
-				r_cmd6 <= 0;
-				r_cmd7 <= 0;
-				r_cmd8 <= 0;
-				r_cmd9 <= 0;
-			end else if (w_st0 == 1 && r_midi0 == w_midi) begin
-				r_midi0 <= 7'h7f; // 7 bits '1'
-				r_cmd0 <= 0;
-			end else if (w_st1 == 1 && r_midi1 == w_midi) begin
-				r_midi1 <= 7'h7f;
-				r_cmd1 <= 0;
-			end else if (w_st2 == 1 && r_midi2 == w_midi) begin
-				r_midi2 <= 7'h7f;
-				r_cmd2 <= 0;
-			end else if (w_st3 == 1 && r_midi3 == w_midi) begin
-				r_midi3 <= 7'h7f;
-				r_cmd3 <= 0;
-			end else if (w_st4 == 1 && r_midi4 == w_midi) begin
-				r_midi4 <= 7'h7f;
-				r_cmd4 <= 0;
-			end else if (w_st5 == 1 && r_midi5 == w_midi) begin
-				r_midi5 <= 7'h7f;
-				r_cmd5 <= 0;
-			end else if (w_st6 == 1 && r_midi6 == w_midi) begin
-				r_midi6 <= 7'h7f;
-				r_cmd6 <= 0;
-			end else if (w_st7 == 1 && r_midi7 == w_midi) begin
-				r_midi7 <= 7'h7f;
-				r_cmd7 <= 0;
-			end else if (w_st8 == 1 && r_midi8 == w_midi) begin
-				r_midi8 <= 7'h7f;
-				r_cmd8 <= 0;
-			end else if (w_st9 == 1 && r_midi9 == w_midi) begin
-				r_midi9 <= 7'h7f;
-				r_cmd9 <= 0;
-			end // it looks like latches are inferred each time a comibnatorial path does not set r_midi or r_cmd even if it does not
-			// use it, becasue of that they have to be set in every conditional path???!
+				r_midi0 <= 7'h0;
+				r_midi1 <= 7'h0;
+				r_midi2 <= 7'h0;
+				r_midi3 <= 7'h0;
+				r_midi4 <= 7'h0;
+				r_midi5 <= 7'h0;
+				r_midi6 <= 7'h0;
+				r_midi7 <= 7'h0;
+				r_midi8 <= 7'h0;
+				r_midi9 <= 7'h0;
+				rst <= 1'b1;
+			end else if (w_st0 !== IDLE && r_midi0 == w_midi) begin
+				r_midi0 <= 7'h0; // MIDI 0 is equal to turn off
+				r_data0 <= 16'b0;
+			end else if (w_st1 !== IDLE && r_midi1 == w_midi) begin
+				r_midi1 <= 7'h0;
+				r_data1 <= 16'b0;
+			end else if (w_st2 !== IDLE && r_midi2 == w_midi) begin
+				r_midi2 <= 7'h0;
+				r_data2 <= 16'b0;
+			end else if (w_st3 !== IDLE && r_midi3 == w_midi) begin
+				r_midi3 <= 7'h0;
+				r_data3 <= 16'b0;
+			end else if (w_st4 !== IDLE && r_midi4 == w_midi) begin
+				r_midi4 <= 7'h0;
+				r_data4 <= 16'b0;
+			end else if (w_st5 !== IDLE && r_midi5 == w_midi) begin
+				r_midi5 <= 7'h0;
+				r_data5 <= 16'b0;
+			end else if (w_st6 !== IDLE && r_midi6 == w_midi) begin
+				r_midi6 <= 7'h0;
+				r_data6 <= 16'b0;
+			end else if (w_st7 !== IDLE && r_midi7 == w_midi) begin
+				r_midi7 <= 7'h0;
+				r_data7 <= 16'b0;
+			end else if (w_st8 !== IDLE && r_midi8 == w_midi) begin
+				r_midi8 <= 7'h0;
+				r_data8 <= 16'b0;
+			end else if (w_st9 !== IDLE && r_midi9 == w_midi) begin
+				r_midi9 <= 7'h0;
+				r_data9 <= 16'b0;
+			end
 		end
 		
+		// To be refactored to something more efficient
 		// loop around the banks and output a value from one of them, if some are empty do nothing for now (this should be optimized)
 		// maybe just output values from ones that are not empty?, this will have to be signalled further down the pipeline (size of window?) ask mr Zabołotny
 		if (v_idx == 0 && w_st0 == 1) begin // it may be not valid here yet!!! just knowing it is working
-			o_signal <= w_sine0;
-		end else if (v_idx == 1 && w_st1 == 1) begin
-			o_signal <= w_sine1;
-		end else if (v_idx == 2 && w_st2 == 1) begin
-			o_signal <= w_sine2;		
-		end else if (v_idx == 3 && w_st3 == 1) begin
-			o_signal <= w_sine3;		
-		end else if (v_idx == 4 && w_st4 == 1) begin
-			o_signal <= w_sine4;		
-		end else if (v_idx == 5 && w_st5 == 1) begin
-			o_signal <= w_sine5;		
-		end else if (v_idx == 6 && w_st6 == 1) begin
-			o_signal <= w_sine6;		
-		end else if (v_idx == 7 && w_st7 == 1) begin
-			o_signal <= w_sine7;		
-		end else if (v_idx == 8 && w_st8 == 1) begin
-			o_signal <= w_sine8;		
-		end else if (v_idx == 9 && w_st9 == 1) begin
-			o_signal <= w_sine9;
+			o_signal <= w_signal0;
+		end else if (v_idx == 1 && w_st1 == RDY) begin
+			o_signal <= w_signal1;
+		end else if (v_idx == 2 && w_st2 == RDY) begin
+			o_signal <= w_signal2;		
+		end else if (v_idx == 3 && w_st3 == RDY) begin
+			o_signal <= w_signal3;		
+		end else if (v_idx == 4 && w_st4 == RDY) begin
+			o_signal <= w_signal4;		
+		end else if (v_idx == 5 && w_st5 == RDY) begin
+			o_signal <= w_signal5;		
+		end else if (v_idx == 6 && w_st6 == RDY) begin
+			o_signal <= w_signal6;		
+		end else if (v_idx == 7 && w_st7 == RDY) begin
+			o_signal <= w_signal7;		
+		end else if (v_idx == 8 && w_st8 == RDY) begin
+			o_signal <= w_signal8;		
+		end else if (v_idx == 9 && w_st9 == RDY) begin
+			o_signal <= w_signal9;
 		end
 		if (v_idx == 9)
 			v_idx <= 0;
