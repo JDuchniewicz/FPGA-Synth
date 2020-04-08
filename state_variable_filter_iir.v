@@ -21,7 +21,7 @@ module state_variable_filter_iir(input clk,
 	wire signed[64:0] mR_0, mR_1, mR_2, mR_3; //init them later + 1 bcs multiplication
 	wire signed[34:0] w_extended_i_data;
 	
-	assign w_extended_i_data = {{3{i_data[15]}}, {i_data[14:0]}, 18'b0};
+	assign w_extended_i_data = {{3{i_data[15]}}, {i_data[14:0]}, 17'b0};
 	assign o_filtered = {v2[34], v2[31:17]}; // cut out bits because some are in Q2.31, copy sign bit and shift just Q0.15 part
 
 		
@@ -73,8 +73,9 @@ module state_variable_filter_iir(input clk,
 		\	ic2eq = 2*v2 - ic2eq // shift simult
 			// careful about operations order now, be sure to check which finish first
 	*/
-	// Reset logic
-	always @ (posedge clk or posedge rst) begin // reset should be async? or posedge rst?
+
+	always @ (posedge clk or posedge rst) begin
+		// reset logic
 		if (rst) begin
 			v1 <= 35'b0;
 			v2 <= 35'b0;
@@ -84,25 +85,23 @@ module state_variable_filter_iir(input clk,
 			
 			run <= 1'b0;
 			state <= 3'b0;
-		end
-	end
-	
-	// 
-	always @ (posedge clk) begin
-		if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
+		end 
+		
+		// state machine logic
+		else if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
 			v2 <= 35'b0; // output receive 0
 		else if (ena && !run && !rst) begin // just received new signal, calc coeff (!run will trigger it to loop as long as enable is not on)
 			run <= 1'b1;
 			state <= 3'b0; //check this width, it must be adjusted to obtain proper results
 		end else if (run) begin
-			state <= state + 1;
+			state <= state + 1'b1;
 			
 			case (state) // unless reset, this will contain previous samples in state coefficients v1,v2,v3
 					3'b000: begin
 						v3 <=  w_extended_i_data - ic2eq; // multiplication is already happening now v3 is correct
 					end
 					3'b001: begin // IMPORTANT, here tradeoff between more cycles/less LUT
-						v1 <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication
+						v1 <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
 						v2 <= ic2eq + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or 
 					end
 					3'b010: begin
