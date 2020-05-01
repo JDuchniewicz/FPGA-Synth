@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+sudo dd if=../software/u-boot/u-boot-with-spl.sfp of=/dev/loop0p3 bs=64k seek=0
+sudo mkfs -t vfat /dev/loop0p1
+sudo mkfs.ext4 /dev/loop0p2
+sudo mount /dev/loop0p1 ./temp_mount
+sudo cp ../software/u-boot/u-boot.img ../software/u-boot/boot.scr ../soc_system.dtb ../soc_system.rbf ./temp_mount/
+sudo dd if=sdcard.img of=/dev/mmcblk0 bs=2048
+sync
+sudo umount ./temp_mount
