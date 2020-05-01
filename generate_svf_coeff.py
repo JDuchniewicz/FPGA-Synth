@@ -23,26 +23,26 @@ class Generator:
             a2 = g*a1
             a3 = g*a2
             #print("m:{}, a1:{}, a2:{}, a3:{}".format(m,a1,a2,a3))
-            # now convert to Q3.31 format for precision
+            # now convert to Q2.31 format for precision
             a1_q = int(a1 * 2**31)
             a2_q = int(a2 * 2**31)
             a3_q = int(a3 * 2**31)
             
             if self.args.q is not False:
                 midi_hex = '{0:0{1}x}'.format(i, 2)
-                a1_bin = '{0:0{1}b}'.format(a1_q, 34)
-                a2_bin = '{0:0{1}b}'.format(a2_q, 34)
-                a3_bin = '{0:0{1}b}'.format(a3_q, 34)
+                a1_bin = '{0:0{1}b}'.format(a1_q, 35)
+                a2_bin = '{0:0{1}b}'.format(a2_q, 35)
+                a3_bin = '{0:0{1}b}'.format(a3_q, 35)
 
                 line = "7'h{} \t:\t begin \n".format(midi_hex)
-                line += "\to_a1 <= 34'b{};\n".format(a1_bin)
-                line += "\to_a2 <= 34'b{};\n".format(a2_bin)
-                line += "\to_a3 <= 34'b{};\n".format(a3_bin) # later add spacing between n and m values '_'
+                line += "\to_a1 <= 35'b{};\n".format(a1_bin)
+                line += "\to_a2 <= 35'b{};\n".format(a2_bin)
+                line += "\to_a3 <= 35'b{};\n".format(a3_bin) # later add spacing between n and m values '_'
                 line += "\tend\n"
                 #print(line)
                 out.write(line)
             else:
-                print("in Q3.31 a1:{}, a2:{}, a3:{}".format(a1_q,a2_q,a3_q))
+                print("in Q2.31 a1:{}, a2:{}, a3:{}".format(a1_q,a2_q,a3_q))
 
 
 def main():
