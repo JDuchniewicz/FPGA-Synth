@@ -39,7 +39,7 @@ module bank_manager(input clk,
 						 
 	localparam IDLE = 2'b00, BSY = 2'b01, RDY = 2'b10;					
 	
-	wire[1:0] w_st0, w_st1, w_st2, w_st3, w_st4,
+	wire[1:0] w_st0, w_st1, w_st2, w_st3, w_st4, // these states seem to be useless other than for debug? (but still not of use) BM is the master, pipeline does not have any power
 				 w_st5, w_st6, w_st7, w_st8, w_st9;
 				 
 	reg[15:0] r_data0, r_data1, r_data2, r_data3, r_data4,
@@ -85,6 +85,8 @@ module bank_manager(input clk,
 	// single LUT for all pipelines -> phase bank works on 10 times slower clock than bank_manager
 	// For now just clock every pipeline with 10x slower clock, if this is too laggy, then try running each pipeline on two distinct clocks
 	quarter_sine_lut slut(.i_phase(r_lut_input_direct), .o_val(w_lut_output_direct)); // TODO: when this LUT is sampled at lower clock, then it has to be regenerated1!!!!
+	// Because of slowing down clock - there is induced a lag on stable output of samples -> filter 3 times the same value will appear because filter takes so much time -> can be minimized later but
+	// for now just put it less often into registers :)))
 				
 	initial begin
 		v_idx = 0;
@@ -141,34 +143,34 @@ module bank_manager(input clk,
 			o_signal <= 16'b0; // if reset is active, clear the output signal and return it
 			r_rst_pulled <= 1'b0;
 		end else if (w_cmd == 1) begin // START, find free bank and signal to pipeline
-			if (w_st0 == IDLE) begin
+			if (r_midi0 == 7'h0) begin
 				r_midi0 <= w_midi;
 				r_data0 <= i_data;
-			end else if (w_st1 == IDLE) begin
+			end else if (r_midi1 == 7'h0) begin
 				r_midi1 <= w_midi;
 				r_data1 <= i_data;
-			end else if (w_st2 == IDLE) begin
+			end else if (r_midi2 == 7'h0) begin
 				r_midi2 <= w_midi;
 				r_data2 <= i_data;			
-			end else if (w_st3 == IDLE) begin
+			end else if (r_midi3 == 7'h0) begin
 				r_midi3 <= w_midi;
 				r_data3 <= i_data;
-			end else if (w_st4 == IDLE) begin
+			end else if (r_midi4 == 7'h0) begin
 				r_midi4 <= w_midi;
 				r_data4 <= i_data;
-			end else if (w_st5 == IDLE) begin
+			end else if (r_midi5 == 7'h0) begin
 				r_midi5 <= w_midi;
 				r_data5 <= i_data;
-			end else if (w_st6 == IDLE) begin
+			end else if (r_midi6 == 7'h0) begin
 				r_midi6 <= w_midi;
 				r_data6 <= i_data;
-			end else if (w_st7 == IDLE) begin
+			end else if (r_midi7 == 7'h0) begin
 				r_midi7 <= w_midi;
 				r_data7 <= i_data;
-			end else if (w_st8 == IDLE) begin
+			end else if (r_midi8 == 7'h0) begin
 				r_midi8 <= w_midi;
 				r_data8 <= i_data;
-			end else if (w_st9 == IDLE) begin
+			end else if (r_midi9 == 7'h0) begin
 				r_midi9 <= w_midi;
 				r_data9 <= i_data;
 			end // failure to playback yet another sound should be signalled to user!
@@ -194,34 +196,34 @@ module bank_manager(input clk,
 				r_data7 <= 16'b0;
 				r_data8 <= 16'b0;
 				r_data9 <= 16'b0;
-			end else if (w_st0 !== IDLE && r_midi0 == w_midi) begin
+			end else if (r_midi0 == w_midi) begin
 				r_midi0 <= 7'h0; // MIDI 0 is equal to turn off
 				r_data0 <= 16'b0;
-			end else if (w_st1 !== IDLE && r_midi1 == w_midi) begin
+			end else if (r_midi1 == w_midi) begin
 				r_midi1 <= 7'h0;
 				r_data1 <= 16'b0;
-			end else if (w_st2 !== IDLE && r_midi2 == w_midi) begin
+			end else if (r_midi2 == w_midi) begin
 				r_midi2 <= 7'h0;
 				r_data2 <= 16'b0;
-			end else if (w_st3 !== IDLE && r_midi3 == w_midi) begin
+			end else if (r_midi3 == w_midi) begin
 				r_midi3 <= 7'h0;
 				r_data3 <= 16'b0;
-			end else if (w_st4 !== IDLE && r_midi4 == w_midi) begin
+			end else if (r_midi4 == w_midi) begin
 				r_midi4 <= 7'h0;
 				r_data4 <= 16'b0;
-			end else if (w_st5 !== IDLE && r_midi5 == w_midi) begin
+			end else if (r_midi5 == w_midi) begin
 				r_midi5 <= 7'h0;
 				r_data5 <= 16'b0;
-			end else if (w_st6 !== IDLE && r_midi6 == w_midi) begin
+			end else if (r_midi6 == w_midi) begin
 				r_midi6 <= 7'h0;
 				r_data6 <= 16'b0;
-			end else if (w_st7 !== IDLE && r_midi7 == w_midi) begin
+			end else if (r_midi7 == w_midi) begin
 				r_midi7 <= 7'h0;
 				r_data7 <= 16'b0;
-			end else if (w_st8 !== IDLE && r_midi8 == w_midi) begin
+			end else if (r_midi8 == w_midi) begin
 				r_midi8 <= 7'h0;
 				r_data8 <= 16'b0;
-			end else if (w_st9 !== IDLE && r_midi9 == w_midi) begin
+			end else if (r_midi9 == w_midi) begin
 				r_midi9 <= 7'h0;
 				r_data9 <= 16'b0;
 			end
