@@ -7,6 +7,8 @@
 module pipeline(input clk,
 					 input rst,
 					 input[15:0] i_data,
+					 output [13:0] o_lut_input,
+					 input signed [15:0] i_lut_output, // passthrough for LUT, probably can be used for other types of LUT
 					 output reg[1:0] o_state,
 					 output[15:0] o_signal
 					);
@@ -26,9 +28,10 @@ module pipeline(input clk,
 	assign w_vel = i_data[7:0];
 	
 	phase_bank pb(.clk(clk), .i_midi(w_midi), .o_phase(w_phase)); // add reset control to these modules
-	quarter_sine lut(.clk(clk), .i_phase(w_phase), .o_val(w_sine));
+	quarter_sine qsine(.clk(clk), .i_phase(w_phase), .o_lut_input(o_lut_input), .i_lut_output(i_lut_output), .o_val(w_sine));
 	state_variable_filter_iir SVF(.clk(clk), .rst(rst), .ena(r_filt_ena), .i_midi(w_midi), .i_data(w_sine), .o_filtered(o_signal)); // when adding new modules, o_signal is moved to the last
-	
+							
+							
 	initial begin
 		o_state = IDLE;
 		v_delay = 0;
@@ -37,7 +40,6 @@ module pipeline(input clk,
 	end
 
 	always @(posedge clk or posedge rst) begin
-		// reset logic
 		if (rst) begin
 			o_state <= IDLE;
 			v_delay <= 0;
@@ -52,7 +54,7 @@ module pipeline(input clk,
 			end else if (o_state == BSY) begin
 				if (v_delay > 6) // next cycle is ready (do not know if filter should not loop at least once?)
 					o_state <= RDY;
-				else if (v_delay > 3) // 4 cycles for sine wave (may need to be adjusted for different signals
+				else if (v_delay > 2) // 3 cycles for sine wave (may need to be adjusted for different signals
 					r_filt_ena <= 1; // signal is already ready
 
 				v_delay <= v_delay + 1;
