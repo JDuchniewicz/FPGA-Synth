@@ -10,11 +10,6 @@
 // add module for writing to sdram
 // SPI to DAC - MASH?
 
-// REFACTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// add concept of pipeline, move all that can be moved there and perform signalling generation etc from here
-// here should remain only the part responsible for signal samples generation each cycle and signalling proper pipelines, registers that tell what their state is
-// should be inside, along with midi stuff, filtering is done per pipeline and final signal of pipeline is to be delivered by an out reg by itself
-
 // DONE:
 // write a testbench for Synthesizer and test it offline - DONE, looks fine
 // write a python script for generation of data - DONE for sine
@@ -36,8 +31,11 @@
 // TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
 
 module bank_manager(input clk,
-						 input[15:0] i_data,
-						 output reg signed[15:0] o_signal); 
+						  input clk_slow,
+						  input reset,
+						  input[15:0] i_data,
+						  output reg signed[15:0] o_signal,
+						  output reg signed[3:0] o_idx); 
 						 
 	localparam IDLE = 2'b00, BSY = 2'b01, RDY = 2'b10;					
 	
@@ -46,14 +44,23 @@ module bank_manager(input clk,
 				 
 	reg[15:0] r_data0, r_data1, r_data2, r_data3, r_data4,
 				 r_data5, r_data6, r_data7, r_data8, r_data9;
+	
+	wire [13:0] w_lut_input_0, w_lut_input_1, w_lut_input_2, w_lut_input_3, w_lut_input_4,
+					w_lut_input_5, w_lut_input_6, w_lut_input_7, w_lut_input_8, w_lut_input_9;
+	
+	reg [13:0] r_lut_input_direct;
+								
+	reg signed [15:0] r_lut_output_0, r_lut_output_1, r_lut_output_2, r_lut_output_3, r_lut_output_4,
+							r_lut_output_5, r_lut_output_6, r_lut_output_7, r_lut_output_8, r_lut_output_9;
 				 
 	wire signed[15:0] w_signal0, w_signal1, w_signal2, w_signal3, w_signal4,
-							w_signal5, w_signal6, w_signal7, w_signal8, w_signal9;
+							w_signal5, w_signal6, w_signal7, w_signal8, w_signal9,
+							w_lut_output_direct;
 				  
 	reg[6:0]   r_midi0, r_midi1, r_midi2, r_midi3, r_midi4,
 				  r_midi5, r_midi6, r_midi7, r_midi8, r_midi9;
 				  
-	reg rst;
+	reg r_rst_pulled; // feels like this reset is just an extended reset from outer components, TODO: rethink?
 				  
 	integer v_idx;
 	
@@ -64,21 +71,25 @@ module bank_manager(input clk,
 	assign w_midi = i_data[14:8];
 	
 	pipeline
-				p0(.clk(clk), .rst(rst), .i_data(r_data0), .o_state(w_st0), .o_signal(w_signal0)),
-				p1(.clk(clk), .rst(rst), .i_data(r_data1), .o_state(w_st1), .o_signal(w_signal1)),
-				p2(.clk(clk), .rst(rst), .i_data(r_data2), .o_state(w_st2), .o_signal(w_signal2)),
-				p3(.clk(clk), .rst(rst), .i_data(r_data3), .o_state(w_st3), .o_signal(w_signal3)),
-				p4(.clk(clk), .rst(rst), .i_data(r_data4), .o_state(w_st4), .o_signal(w_signal4)),
-				p5(.clk(clk), .rst(rst), .i_data(r_data5), .o_state(w_st5), .o_signal(w_signal5)),
-				p6(.clk(clk), .rst(rst), .i_data(r_data6), .o_state(w_st6), .o_signal(w_signal6)),
-				p7(.clk(clk), .rst(rst), .i_data(r_data7), .o_state(w_st7), .o_signal(w_signal7)),
-				p8(.clk(clk), .rst(rst), .i_data(r_data8), .o_state(w_st8), .o_signal(w_signal8)),
-				p9(.clk(clk), .rst(rst), .i_data(r_data9), .o_state(w_st9), .o_signal(w_signal9));
+				p0(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data0), .o_lut_input(w_lut_input_0), .i_lut_output(r_lut_output_0), .o_state(w_st0), .o_signal(w_signal0)),
+				p1(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data1), .o_lut_input(w_lut_input_1), .i_lut_output(r_lut_output_1), .o_state(w_st1), .o_signal(w_signal1)),
+				p2(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data2), .o_lut_input(w_lut_input_2), .i_lut_output(r_lut_output_2), .o_state(w_st2), .o_signal(w_signal2)),
+				p3(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data3), .o_lut_input(w_lut_input_3), .i_lut_output(r_lut_output_3), .o_state(w_st3), .o_signal(w_signal3)),
+				p4(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data4), .o_lut_input(w_lut_input_4), .i_lut_output(r_lut_output_4), .o_state(w_st4), .o_signal(w_signal4)),
+				p5(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data5), .o_lut_input(w_lut_input_5), .i_lut_output(r_lut_output_5), .o_state(w_st5), .o_signal(w_signal5)),
+				p6(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data6), .o_lut_input(w_lut_input_6), .i_lut_output(r_lut_output_6), .o_state(w_st6), .o_signal(w_signal6)),
+				p7(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data7), .o_lut_input(w_lut_input_7), .i_lut_output(r_lut_output_7), .o_state(w_st7), .o_signal(w_signal7)),
+				p8(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data8), .o_lut_input(w_lut_input_8), .i_lut_output(r_lut_output_8), .o_state(w_st8), .o_signal(w_signal8)),
+				p9(.clk(clk_slow), .rst(r_rst_pulled), .i_data(r_data9), .o_lut_input(w_lut_input_9), .i_lut_output(r_lut_output_9), .o_state(w_st9), .o_signal(w_signal9));
+	
+	// single LUT for all pipelines -> phase bank works on 10 times slower clock than bank_manager
+	// For now just clock every pipeline with 10x slower clock, if this is too laggy, then try running each pipeline on two distinct clocks
+	quarter_sine_lut slut(.i_phase(r_lut_input_direct), .o_val(w_lut_output_direct)); // TODO: when this LUT is sampled at lower clock, then it has to be regenerated1!!!!
 				
 	initial begin
 		v_idx = 0;
 		o_signal = 16'b0;
-		rst = 1'b0;
+		r_rst_pulled = 1'b0;
 		
 		r_data0 = 16'b0;
 		r_data1 = 16'b0;
@@ -101,6 +112,19 @@ module bank_manager(input clk,
 		r_midi7 = 7'b0;
 		r_midi8 = 7'b0;
 		r_midi9 = 7'b0;
+		
+		r_lut_output_0 = 16'b0;
+		r_lut_output_1 = 16'b0;
+		r_lut_output_2 = 16'b0;
+		r_lut_output_3 = 16'b0;
+		r_lut_output_4 = 16'b0;
+		r_lut_output_5 = 16'b0;
+		r_lut_output_6 = 16'b0;
+		r_lut_output_7 = 16'b0;
+		r_lut_output_8 = 16'b0;
+		r_lut_output_9 = 16'b0;
+		
+		r_lut_input_direct = 14'b0;
 	end
 	
 	// bank manager should ping each pipeline to do its work
@@ -111,7 +135,12 @@ module bank_manager(input clk,
 	// then ADSR
 	
 	always @ (posedge clk) begin
-		if (w_cmd == 1) begin // START, find free bank and signal to pipeline
+		if (reset) begin
+			r_rst_pulled <= 1'b1; // should reset be held?
+		end else if (r_rst_pulled) begin 
+			o_signal <= 16'b0; // if reset is active, clear the output signal and return it
+			r_rst_pulled <= 1'b0;
+		end else if (w_cmd == 1) begin // START, find free bank and signal to pipeline
 			if (w_st0 == IDLE) begin
 				r_midi0 <= w_midi;
 				r_data0 <= i_data;
@@ -155,7 +184,16 @@ module bank_manager(input clk,
 				r_midi7 <= 7'h0;
 				r_midi8 <= 7'h0;
 				r_midi9 <= 7'h0;
-				rst <= 1'b1;
+				r_data0 <= 16'b0;
+				r_data1 <= 16'b0;
+				r_data2 <= 16'b0;
+				r_data3 <= 16'b0;
+				r_data4 <= 16'b0;
+				r_data5 <= 16'b0;
+				r_data6 <= 16'b0;
+				r_data7 <= 16'b0;
+				r_data8 <= 16'b0;
+				r_data9 <= 16'b0;
 			end else if (w_st0 !== IDLE && r_midi0 == w_midi) begin
 				r_midi0 <= 7'h0; // MIDI 0 is equal to turn off
 				r_data0 <= 16'b0;
@@ -192,31 +230,67 @@ module bank_manager(input clk,
 		// To be refactored to something more efficient
 		// loop around the banks and output a value from one of them, if some are empty do nothing for now (this should be optimized)
 		// maybe just output values from ones that are not empty?, this will have to be signalled further down the pipeline (size of window?) ask mr Zabołotny
-		if (v_idx == 0 && w_st0 == 1) begin // it may be not valid here yet!!! just knowing it is working
+		
+		// problem is with wiring to lut and out of -> 1 cycle takes to write values, so they should be written in cyclic manner
+			// idx 0 
+			// r_lut_input_direct <= w_lut_input_0; // wire up
+			// r_lut_output_9 <= w_lut_output_direct; // 1 cycle delay but output_direct has already computed value for 9!
+			//
+			// idx 1
+			// r_lut_input_direct <= w_lut_input_1;
+			// r_lut_output_0 <= w_lut_output_direct; 
+			// and so on -> this way no need for memory
+			
+		
+		// THIS will collect invalid values for some time, then output a proper one
+		
+		if (v_idx == 0) begin // && w_st0 == RDY) begin // maybe separate collection of ready signals?
 			o_signal <= w_signal0;
-		end else if (v_idx == 1 && w_st1 == RDY) begin
+			r_lut_input_direct <= w_lut_input_0; // wire up this bank's phase
+			r_lut_output_9 <= w_lut_output_direct; // last cycle's looked-up value is for previous index
+		end else if (v_idx == 1) begin // && w_st1 == RDY) begin // for now remove ready check
 			o_signal <= w_signal1;
-		end else if (v_idx == 2 && w_st2 == RDY) begin
-			o_signal <= w_signal2;		
-		end else if (v_idx == 3 && w_st3 == RDY) begin
+			r_lut_input_direct <= w_lut_input_1;
+			r_lut_output_0 <= w_lut_output_direct;
+		end else if (v_idx == 2) begin // && && w_st2 == RDY) begin
+			o_signal <= w_signal2;
+			r_lut_input_direct <= w_lut_input_2;
+			r_lut_output_1 <= w_lut_output_direct;
+		end else if (v_idx == 3) begin // && && w_st3 == RDY) begin
 			o_signal <= w_signal3;		
-		end else if (v_idx == 4 && w_st4 == RDY) begin
-			o_signal <= w_signal4;		
-		end else if (v_idx == 5 && w_st5 == RDY) begin
-			o_signal <= w_signal5;		
-		end else if (v_idx == 6 && w_st6 == RDY) begin
-			o_signal <= w_signal6;		
-		end else if (v_idx == 7 && w_st7 == RDY) begin
-			o_signal <= w_signal7;		
-		end else if (v_idx == 8 && w_st8 == RDY) begin
-			o_signal <= w_signal8;		
-		end else if (v_idx == 9 && w_st9 == RDY) begin
+			r_lut_input_direct <= w_lut_input_3;
+			r_lut_output_2 <= w_lut_output_direct;
+		end else if (v_idx == 4) begin // && && w_st4 == RDY) begin
+			o_signal <= w_signal4;
+			r_lut_input_direct <= w_lut_input_4;
+			r_lut_output_3 <= w_lut_output_direct;
+		end else if (v_idx == 5 ) begin // &&&& w_st5 == RDY) begin
+			o_signal <= w_signal5;
+			r_lut_input_direct <= w_lut_input_5;
+			r_lut_output_4 <= w_lut_output_direct;
+		end else if (v_idx == 6) begin // && && w_st6 == RDY) begin
+			o_signal <= w_signal6;
+			r_lut_input_direct <= w_lut_input_6;
+			r_lut_output_5 <= w_lut_output_direct;
+		end else if (v_idx == 7 ) begin // &&&& w_st7 == RDY) begin
+			o_signal <= w_signal7;
+			r_lut_input_direct <= w_lut_input_7;
+			r_lut_output_6 <= w_lut_output_direct;
+		end else if (v_idx == 8 ) begin // &&&& w_st8 == RDY) begin
+			o_signal <= w_signal8;
+			r_lut_input_direct <= w_lut_input_8;
+			r_lut_output_7 <= w_lut_output_direct;
+		end else if (v_idx == 9) begin // && && w_st9 == RDY) begin
 			o_signal <= w_signal9;
+			r_lut_input_direct <= w_lut_input_9;
+			r_lut_output_8 <= w_lut_output_direct;
 		end
+		
 		if (v_idx == 9)
 			v_idx <= 0;
 		else
 			v_idx <= v_idx + 1;
+		o_idx <= v_idx; // DEBUG
 	end
 
 endmodule

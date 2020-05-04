@@ -2,20 +2,22 @@
 
 module quarter_sine(input clk,
 							input[15:0] i_phase,
+							output reg [13:0] o_lut_input, // 2 bits are being used inside this module
+							input signed [15:0] i_lut_output,
 							output reg signed[15:0] o_val);
 		reg r_negate[1:0];
-		reg[13:0] r_index; // 2 bits are being used inside this module
 		reg signed[15:0] r_lut_sine;
-		wire signed[15:0] w_tmp_val;
 		
-		quarter_sine_lut lut(.i_phase(r_index), .o_val(w_tmp_val));
+		initial o_val = 16'b0;
+		initial o_lut_input = 14'b0;
+		
 		always @(posedge clk) begin
 			// clock one
 			r_negate[0] <= i_phase[15]; // negate or not
-			r_index <= i_phase[14] ? ~i_phase[13:0] : i_phase[13:0]; // invert index if 2nd MSB is set
+			o_lut_input <= i_phase[14] ? ~i_phase[13:0] : i_phase[13:0]; // invert index if 2nd MSB is set
 			
 			// clock two
-			r_lut_sine <= w_tmp_val;
+			r_lut_sine <= i_lut_output;
 			r_negate[1] <= r_negate[0]; //to avoid overwriting
 
 			//clock three
