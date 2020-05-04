@@ -15,8 +15,8 @@ module state_variable_filter_iir(input clk,
 	// all the bus widths should be parametrized later, for easier reuse
 	reg signed[34:0] v1, v2, v3, ic1eq, ic2eq; // now check all widths and where to cut and shift, input signal is scaled to it needs to be taken into account as well
 	wire signed[34:0] a1, a2, a3;
-	reg run;
 	reg [2:0] state;
+	reg [6:0] r_prev_midi;
 	
 	wire signed[64:0] mR_0, mR_1, mR_2, mR_3; //init them later + 1 bcs multiplication
 	wire signed[34:0] w_extended_i_data;
@@ -35,8 +35,8 @@ module state_variable_filter_iir(input clk,
 		ic1eq = 35'b0;
 		ic2eq = 35'b0;
 		
-		run = 1'b0;
 		state = 3'b0;
+		r_prev_midi = 7'b0;
 		
 		// dummy registers need to be initialized as well
 		d0 = 5'b0;
@@ -75,6 +75,9 @@ module state_variable_filter_iir(input clk,
 	*/
 
 	always @ (posedge clk or posedge rst) begin
+		
+		r_prev_midi <= i_midi;
+		
 		// reset logic
 		if (rst) begin
 			v1 <= 35'b0;
@@ -83,31 +86,29 @@ module state_variable_filter_iir(input clk,
 			ic1eq <= 35'b0;
 			ic2eq <= 35'b0;
 			
-			run <= 1'b0;
 			state <= 3'b0;
-		end 
-		
+			r_prev_midi <= 7'b0;
+		end
 		// state machine logic
 		else if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
 			v2 <= 35'b0; // output receive 0
-		else if (ena && !run && !rst) begin // just received new signal, calc coeff (!run will trigger it to loop as long as enable is not on)
-			run <= 1'b1;
-			state <= 3'b0; //check this width, it must be adjusted to obtain proper results
-		end else if (run) begin
-			state <= state + 1'b1;
-			
+		else if (ena && i_midi !== r_prev_midi) begin // just received new midi, calc coeff
+			state <= 3'b0;
+		end else if (ena) begin		// if filtering the same midi signal, then just loop
 			case (state) // unless reset, this will contain previous samples in state coefficients v1,v2,v3
 					3'b000: begin
-						v3 <=  w_extended_i_data - ic2eq; // multiplication is already happening now v3 is correct
+						v3 <= w_extended_i_data - ic2eq; // multiplication is already happening now v3 is correct
+						state <= 3'b001;
 					end
-					3'b001: begin // IMPORTANT, here tradeoff between more cycles/less LUT
+					3'b001: begin
 						v1 <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
-						v2 <= ic2eq + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or 
+						v2 <= ic2eq + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or (TODO: this could probably need a greater width...?)
+						state <= 3'b010;
 					end
 					3'b010: begin
 						ic1eq <= (v1 <<< 2) - ic1eq;
 						ic2eq <= (v2 <<< 2) - ic2eq;
-						run <= 1'b0;
+						state <= 3'b000;
 					end
 			endcase
 		end
