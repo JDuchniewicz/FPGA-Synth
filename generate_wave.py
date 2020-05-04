@@ -12,7 +12,7 @@ class Generator:
         self.output_width_hex_len = int(self.args.r) // 4 # 4 bits is 1 hex value
         self.table_size = int(self.args.n)
         self.input_width = int(math.log2(self.table_size))
-        self.table_size_hex_len = int(math.log2(self.table_size) // 4)
+        self.table_size_hex_len = int(math.ceil(math.log2(self.table_size) / 4))
 
     def generate(self):
         if 'sine' in self.args.t:
@@ -30,7 +30,6 @@ class Generator:
                 
     # always generate quarter of a wave for Q format
     def generate_qnotation_sine(self, out):
-        self.table_size >>= 2
         self.output_width -= 1
         for sample in range(self.table_size):
             rad = ((2 * sample + 1) / (2 * self.table_size * 4)) * 2 * math.pi # according to zipCPU, take quarter of full wave
