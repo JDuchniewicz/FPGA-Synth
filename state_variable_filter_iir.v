@@ -4,6 +4,7 @@
 // in 3 cycles of delay it calculates proper output
 
 module state_variable_filter_iir(input clk,
+											input clk_en,
 											input rst,
 											input ena, // kick it 
 											input[6:0] i_midi,
@@ -92,9 +93,9 @@ module state_variable_filter_iir(input clk,
 		// state machine logic
 		else if (i_midi == 7'h00) // 0 midi value is reserved to make this filter a passthrough
 			v2 <= 35'b0; // output receive 0
-		else if (ena && i_midi !== r_prev_midi) begin // just received new midi, calc coeff
+		else if (ena && i_midi !== r_prev_midi && clk_en) begin // just received new midi, calc coeff
 			state <= 3'b0;
-		end else if (ena) begin		// if filtering the same midi signal, then just loop
+		end else if (ena && clk_en) begin		// if filtering the same midi signal, then just loop
 			case (state) // unless reset, this will contain previous samples in state coefficients v1,v2,v3
 					3'b000: begin
 						v3 <= w_extended_i_data - ic2eq; // multiplication is already happening now v3 is correct
