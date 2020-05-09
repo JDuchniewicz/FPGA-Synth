@@ -1,24 +1,23 @@
-// 10 times slower clock than input one
+// parametrized clock with assumed reference 100MHz
 
-module clk_slow(input clk,
+module clk_slow #(parameter FREQ = 1) (
+					 input clk,
 					 input rst,
 					 output reg clk_out);
 		
-	reg [3:0] counter;
+	reg [26:0] counter;
 	
-	initial counter = 4'b0;
+	initial counter = 27'b0;
 	
 	always @(posedge clk or posedge rst) begin
 		if (rst) begin
-			counter <= 4'b0;
+			counter <= 27'b0;
 			clk_out <= 1'b0;
 		end else begin
-			if (counter == 9) begin
-				clk_out <= 1'b1;
-				counter <= 4'b0;
-			end else begin
-				clk_out <= 1'b0;
-				counter <= counter + 1;
+			counter <= counter + 1;
+			if (counter == 100_000_000/2/FREQ) begin // assuming 100MHz ref clock
+				counter <= 27'b0;
+				clk_out <= ~clk_out;
 			end
 		end
 	end
