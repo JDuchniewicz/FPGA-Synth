@@ -1,0 +1,7 @@
+
+        pll_100M: pll_100M {
+            compatible = "fixed-clock";
+            #clock-cells = <0>;
+            clock-frequency = <100000000>; /* 100.00 MHz */
+            clock-output-names = "pll_100M_outclk0";
+        }; // end pll_100M (pll_100M)
