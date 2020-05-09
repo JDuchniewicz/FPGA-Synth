@@ -1,4 +1,0 @@
-# Device tree generation
-set_module_assignment embeddedsw.dts.vendor "jduchniewicz"
-set_module_assignment embeddedsw.dts.compatible "dev,synthesizer"
-set_module_assignment embeddedsw.dts.group "synthesizer"
