@@ -17,8 +17,6 @@ echo "Moving SSH config files" # target needs 'haveged' package to create entrop
 cp ./rootfs_old/etc/ssh/sshd_config ./rootfs/etc/ssh/sshd_config
 echo "Moving Ethernet setup"
 cp ./rootfs_old/etc/init.d/S99eth0 ./rootfs/etc/init.d/S99eth0
-echo "Chown of /dev/zero change for ssh"
-sudo chown root:root ./rootfs/dev/zero
 
 echo "Removing old rootfs"
 sudo rm -rf ./rootfs_old

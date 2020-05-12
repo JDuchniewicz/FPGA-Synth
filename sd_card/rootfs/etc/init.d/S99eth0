@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# eth0          Starts eth0 with static IP
+# eth0          Starts eth0 with static IP and fixes SSH /dev/zero ownership
 #
 
 case "$1" in
