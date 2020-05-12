@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+# sshd-fix  Fix sshd /var/empty file ownership to root
+#
+
+case "$1" in
+  start)
+        printf "Sshd /var/empty ownership fix: "
+        chown root:root /var/empty
+        [ $? = 0 ] && echo "OK" || echo "FAIL"
+        ;;
+  *)
+        echo "Usage: $0 {start}"
+        exit 1
+esac
+
+exit $?
