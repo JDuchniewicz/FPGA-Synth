@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# eth0          Starts eth0 with static IP
+#
+
+case "$1" in
+  start)
+        printf "Setting up eth0: "
+        ifconfig up eth0 192.168.2.21
+        [ $? = 0 ] && echo "OK" || echo "FAIL"
+        chown root:root /dev/zero
+        ;;
+  stop)
+        printf "Stopping eth0: "
+        ifconfig down eth0
+        [ $? = 0 ] && echo "OK" || echo "FAIL"
+        ;;
+  restart|reload)
+        "$0" stop
+        "$0" start
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?
