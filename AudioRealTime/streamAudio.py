@@ -3,7 +3,7 @@ try:
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
-except:
+except ImportError:
     print("Something did not import")
 
 i = 0
@@ -16,22 +16,22 @@ y = np.random.randn(10000)
 # Plot 0 is for raw audio data
 li, = ax[0].plot(x, y)
 ax[0].set_xlim(0, 1000)
-ax[0].set_ylim(-5000, 5000)
+ax[0].set_ylim(-10000, 10000)
 ax[0].set_title("Raw Audio Signal")
 # Plot 1 is for the FFT of the Audio
 li2, = ax[1].plot(x, y)
 ax[1].set_xlim(0, 5000)
-ax[1].set_ylim(-100, 100)
+ax[1].set_ylim(-200, 200)
 ax[1].set_title("FFT")
 # Show the plot, do not block updates
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.3)
 plt.pause(0.01)
 
-FORMAT = pyaudio.paInt16 # using 24 bits for input
+FORMAT = pyaudio.paInt24 # using 24 bits for input
 CHANNELS = 1
-RATE = 44100 # this is the sampling rate
-CHUNK = 1024 # how much read from the buffer
+RATE = 96000 # this is the sampling rate
+CHUNK = 2048 # how much read from the buffer
 RECORD_SECONDS = 0.1
 WAVE_OUTPUT_FILENAME = "file.wav"
 
@@ -45,8 +45,30 @@ stream = audio.open(format=FORMAT,
 global keep_going
 keep_going = True
 
+# this will return a np array of 24 bit signals
+def wav2array(nchannels, sampwidth, data):
+    num_samples, remainder = divmod(len(data), sampwidth * nchannels)
+    if remainder > 0:
+        raise ValueError("The length of data is not a multiple of sampwidth * nchannels")
+
+    if sampwidth > 4:
+        raise ValueError("sampwidth must not be greater than 4.")
+
+    if sampwidth == 3:
+        a = np.empty((num_samples, nchannels, 4), dtype=np.uint8)
+        raw_bytes = np.fromstring(data, dtype=np.int8)
+        a[:, :, :sampwidth] = raw_bytes.reshape(-1, nchannels, sampwidth)
+        a[:, :, sampwidth:] = (a[:, :, sampwidth - 1:sampwidth] >> 7) * 255
+        result = a.view('<i4').reshape(a.shape[:-1])
+    else:
+        dt_char = 'u' if sampwidth == 1 else 'i'
+        a = np.fromstring(data, dtype='<%s%d' % (dt_char, sampwidth))
+        result = a.reshape(-1, nchannels)
+    return result
+
+
 def plot_data(in_data):
-    audio_data = np.fromstring(in_data, np.int16)
+    audio_data = wav2array(1, 3, in_data)
     # FFT 10*log10(abs) to scale it to dB and make sure it is not imaginary
     dfft = 10.*np.log10(abs(np.fft.rfft(audio_data)))
 
