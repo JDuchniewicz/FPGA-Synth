@@ -19,3 +19,6 @@ kernel/drivers/net/ethernet/intel/ixgbe/ixgbe.ko
 kernel/drivers/net/ethernet/altera/altera_tse.ko
 kernel/drivers/net/mdio.ko
 kernel/drivers/i2c/algos/i2c-algo-bit.ko
+kernel/sound/core/snd-hwdep.ko
+kernel/sound/usb/snd-usb-audio.ko
+kernel/sound/usb/snd-usbmidi-lib.ko

@@ -13,7 +13,7 @@
    {
       datum _sortIndex
       {
-         value = "3";
+         value = "4";
          type = "int";
       }
    }
@@ -34,7 +34,7 @@
    {
       datum _sortIndex
       {
-         value = "11";
+         value = "12";
          type = "int";
       }
    }
@@ -42,7 +42,7 @@
    {
       datum _sortIndex
       {
-         value = "5";
+         value = "6";
          type = "int";
       }
    }
@@ -63,7 +63,7 @@
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "5";
          type = "int";
       }
    }
@@ -92,7 +92,7 @@
    {
       datum _sortIndex
       {
-         value = "9";
+         value = "10";
          type = "int";
       }
    }
@@ -102,6 +102,14 @@
       {
          value = "0";
          type = "int";
+      }
+   }
+   element hps_0.f2h_axi_clock
+   {
+      datum _tags
+      {
+         value = "";
+         type = "String";
       }
    }
    element hps_0.f2h_axi_slave
@@ -124,7 +132,7 @@
    {
       datum _sortIndex
       {
-         value = "10";
+         value = "11";
          type = "int";
       }
    }
@@ -150,7 +158,7 @@
    {
       datum _sortIndex
       {
-         value = "8";
+         value = "9";
          type = "int";
       }
    }
@@ -175,11 +183,32 @@
          type = "String";
       }
    }
+   element msgdma_0
+   {
+      datum _sortIndex
+      {
+         value = "2";
+         type = "int";
+      }
+   }
+   element msgdma_0.descriptor_slave
+   {
+      datum _tags
+      {
+         value = "";
+         type = "String";
+      }
+      datum baseAddress
+      {
+         value = "32";
+         type = "String";
+      }
+   }
    element onchip_memory2_0
    {
       datum _sortIndex
       {
-         value = "7";
+         value = "8";
          type = "int";
       }
    }
@@ -195,7 +224,7 @@
    {
       datum _sortIndex
       {
-         value = "12";
+         value = "13";
          type = "int";
       }
    }
@@ -227,7 +256,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "7";
          type = "int";
       }
    }
@@ -243,7 +272,7 @@
    {
       datum _sortIndex
       {
-         value = "2";
+         value = "3";
          type = "int";
       }
    }
@@ -335,7 +364,7 @@
   <parameter name="bitClearingEdgeCapReg" value="true" />
   <parameter name="bitModifyingOutReg" value="false" />
   <parameter name="captureEdge" value="true" />
-  <parameter name="clockRate" value="50000000" />
+  <parameter name="clockRate" value="100000000" />
   <parameter name="direction" value="Input" />
   <parameter name="edgeType" value="FALLING" />
   <parameter name="generateIRQ" value="true" />
@@ -356,7 +385,7 @@
   <parameter name="bitClearingEdgeCapReg" value="true" />
   <parameter name="bitModifyingOutReg" value="false" />
   <parameter name="captureEdge" value="true" />
-  <parameter name="clockRate" value="50000000" />
+  <parameter name="clockRate" value="100000000" />
   <parameter name="direction" value="Input" />
   <parameter name="edgeType" value="ANY" />
   <parameter name="generateIRQ" value="true" />
@@ -476,8 +505,8 @@
   <parameter name="ENABLE_USER_ECC" value="false" />
   <parameter name="EXPORT_AFI_HALF_CLK" value="false" />
   <parameter name="EXTRA_SETTINGS" value="" />
-  <parameter name="F2H_AXI_CLOCK_FREQ" value="50000000" />
-  <parameter name="F2H_SDRAM0_CLOCK_FREQ" value="100" />
+  <parameter name="F2H_AXI_CLOCK_FREQ" value="100000000" />
+  <parameter name="F2H_SDRAM0_CLOCK_FREQ" value="100000000" />
   <parameter name="F2H_SDRAM1_CLOCK_FREQ" value="100" />
   <parameter name="F2H_SDRAM2_CLOCK_FREQ" value="100" />
   <parameter name="F2H_SDRAM3_CLOCK_FREQ" value="100" />
@@ -490,8 +519,8 @@
   <parameter name="F2SCLK_SDRAMCLK_Enable" value="false" />
   <parameter name="F2SCLK_SDRAMCLK_FREQ" value="0" />
   <parameter name="F2SCLK_WARMRST_Enable" value="true" />
-  <parameter name="F2SDRAM_Type" value="" />
-  <parameter name="F2SDRAM_Width" value="" />
+  <parameter name="F2SDRAM_Type">Avalon-MM Write-Only</parameter>
+  <parameter name="F2SDRAM_Width" value="256" />
   <parameter name="F2SINTERRUPT_Enable" value="true" />
   <parameter name="F2S_Width" value="3" />
   <parameter name="FIX_READ_LATENCY" value="8" />
@@ -531,10 +560,10 @@
   <parameter name="FPGA_PERIPHERAL_OUTPUT_CLOCK_FREQ_SPIM1_SCLK_OUT" value="100" />
   <parameter name="GPIO_Enable">No,No,No,No,No,No,No,No,No,Yes,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,Yes,No,No,No,No,Yes,No,No,No,No,No,No,No,No,No,No,No,No,Yes,Yes,No,No,No,No,No,No,Yes,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No,No</parameter>
   <parameter name="GP_Enable" value="false" />
-  <parameter name="H2F_AXI_CLOCK_FREQ" value="50000000" />
+  <parameter name="H2F_AXI_CLOCK_FREQ" value="100000000" />
   <parameter name="H2F_CTI_CLOCK_FREQ" value="100" />
   <parameter name="H2F_DEBUG_APB_CLOCK_FREQ" value="100" />
-  <parameter name="H2F_LW_AXI_CLOCK_FREQ" value="50000000" />
+  <parameter name="H2F_LW_AXI_CLOCK_FREQ" value="100000000" />
   <parameter name="H2F_TPIU_CLOCK_IN_FREQ" value="100" />
   <parameter name="HARD_EMIF" value="true" />
   <parameter name="HCX_COMPAT_MODE" value="false" />
@@ -939,7 +968,7 @@
    enabled="1">
   <parameter name="allowMultipleConnections" value="true" />
   <parameter name="avalonSpec" value="2.0" />
-  <parameter name="clkFreq" value="50000000" />
+  <parameter name="clkFreq" value="100000000" />
   <parameter name="hubInstanceID" value="0" />
   <parameter name="readBufferDepth" value="64" />
   <parameter name="readIRQThreshold" value="8" />
@@ -950,6 +979,49 @@
   <parameter name="useRelativePathForSimFile" value="false" />
   <parameter name="writeBufferDepth" value="64" />
   <parameter name="writeIRQThreshold" value="8" />
+ </module>
+ <module name="msgdma_0" kind="altera_msgdma" version="19.1" enabled="1">
+  <parameter name="AUTO_DESCRIPTOR_READ_MASTER_ADDRESS_MAP" value="" />
+  <parameter
+     name="AUTO_DESCRIPTOR_READ_MASTER_ADDRESS_WIDTH"
+     value="AddressWidth = -1" />
+  <parameter name="AUTO_DESCRIPTOR_WRITE_MASTER_ADDRESS_MAP" value="" />
+  <parameter
+     name="AUTO_DESCRIPTOR_WRITE_MASTER_ADDRESS_WIDTH"
+     value="AddressWidth = -1" />
+  <parameter name="AUTO_DEVICE" value="5CSEMA4U23C6" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <parameter name="AUTO_MM_READ_ADDRESS_MAP" value="" />
+  <parameter name="AUTO_MM_READ_ADDRESS_WIDTH" value="AddressWidth = -1" />
+  <parameter name="AUTO_MM_WRITE_ADDRESS_MAP"><![CDATA[<address-map><slave name='hps_0_bridges.f2h_sdram0_data' start='0x0' end='0x100000000' /></address-map>]]></parameter>
+  <parameter name="AUTO_MM_WRITE_ADDRESS_WIDTH" value="AddressWidth = 32" />
+  <parameter name="BURST_ENABLE" value="0" />
+  <parameter name="BURST_WRAPPING_SUPPORT" value="0" />
+  <parameter name="CHANNEL_ENABLE" value="0" />
+  <parameter name="CHANNEL_WIDTH" value="8" />
+  <parameter name="DATA_FIFO_DEPTH" value="32" />
+  <parameter name="DATA_WIDTH" value="32" />
+  <parameter name="DESCRIPTOR_FIFO_DEPTH" value="128" />
+  <parameter name="ENHANCED_FEATURES" value="0" />
+  <parameter name="ERROR_ENABLE" value="0" />
+  <parameter name="ERROR_WIDTH" value="8" />
+  <parameter name="EXPOSE_ST_PORT" value="0" />
+  <parameter name="FIX_ADDRESS_WIDTH" value="32" />
+  <parameter name="MAX_BURST_COUNT" value="2" />
+  <parameter name="MAX_BYTE" value="1024" />
+  <parameter name="MAX_STRIDE" value="1" />
+  <parameter name="MODE" value="2" />
+  <parameter name="PACKET_ENABLE" value="0" />
+  <parameter name="PREFETCHER_DATA_WIDTH" value="32" />
+  <parameter name="PREFETCHER_ENABLE" value="0" />
+  <parameter name="PREFETCHER_MAX_READ_BURST_COUNT" value="2" />
+  <parameter name="PREFETCHER_READ_BURST_ENABLE" value="0" />
+  <parameter name="PROGRAMMABLE_BURST_ENABLE" value="0" />
+  <parameter name="RESPONSE_PORT" value="2" />
+  <parameter name="STRIDE_ENABLE" value="0" />
+  <parameter name="TRANSFER_TYPE" value="Aligned Accesses" />
+  <parameter name="USE_FIX_ADDRESS_WIDTH" value="0" />
  </module>
  <module
    name="onchip_memory2_0"
@@ -1225,6 +1297,24 @@
    kind="avalon"
    version="19.1"
    start="hps_0.h2f_lw_axi_master"
+   end="msgdma_0.csr">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="19.1"
+   start="hps_0.h2f_lw_axi_master"
+   end="msgdma_0.descriptor_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0020" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="19.1"
+   start="hps_0.h2f_lw_axi_master"
    end="custom_leds_0.s0">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x00010008" />
@@ -1312,55 +1402,95 @@
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
-   kind="clock"
+   kind="avalon"
    version="19.1"
-   start="clk_0.clk"
-   end="hps_only_master.clk" />
- <connection kind="clock" version="19.1" start="clk_0.clk" end="sysid_qsys.clk" />
+   start="msgdma_0.mm_write"
+   end="hps_0.f2h_sdram0_data">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <connection
-   kind="clock"
+   kind="avalon_streaming"
    version="19.1"
-   start="clk_0.clk"
-   end="fpga_only_master.clk" />
- <connection kind="clock" version="19.1" start="clk_0.clk" end="dipsw_pio.clk" />
- <connection kind="clock" version="19.1" start="clk_0.clk" end="button_pio.clk" />
- <connection kind="clock" version="19.1" start="clk_0.clk" end="jtag_uart.clk" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="onchip_memory2_0.clk1" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="intr_capturer_0.clock" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="custom_leds_0.clock" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="hps_0.f2h_axi_clock" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="hps_0.h2f_axi_clock" />
- <connection
-   kind="clock"
-   version="19.1"
-   start="clk_0.clk"
-   end="hps_0.h2f_lw_axi_clock" />
+   start="synthesizer_0.avalon_streaming_source"
+   end="msgdma_0.st_sink" />
  <connection kind="clock" version="19.1" start="clk_0.clk" end="pll_100M.refclk" />
  <connection
    kind="clock"
    version="19.1"
    start="pll_100M.outclk0"
+   end="hps_only_master.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="sysid_qsys.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="button_pio.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="dipsw_pio.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="jtag_uart.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="fpga_only_master.clk" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="onchip_memory2_0.clk1" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
    end="synthesizer_0.clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="custom_leds_0.clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="intr_capturer_0.clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="msgdma_0.clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="hps_0.f2h_axi_clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="hps_0.f2h_sdram0_clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="hps_0.h2f_axi_clock" />
+ <connection
+   kind="clock"
+   version="19.1"
+   start="pll_100M.outclk0"
+   end="hps_0.h2f_lw_axi_clock" />
  <connection
    kind="interrupt"
    version="19.1"
@@ -1380,6 +1510,13 @@
    version="19.1"
    start="hps_0.f2h_irq0"
    end="dipsw_pio.irq">
+  <parameter name="irqNumber" value="0" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="19.1"
+   start="hps_0.f2h_irq1"
+   end="msgdma_0.csr_irq">
   <parameter name="irqNumber" value="0" />
  </connection>
  <connection
@@ -1453,6 +1590,11 @@
    version="19.1"
    start="clk_0.clk_reset"
    end="onchip_memory2_0.reset1" />
+ <connection
+   kind="reset"
+   version="19.1"
+   start="clk_0.clk_reset"
+   end="msgdma_0.reset_n" />
  <connection
    kind="reset"
    version="19.1"
