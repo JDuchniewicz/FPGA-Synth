@@ -1,34 +1,12 @@
 
-// In this file will be added all hierarchical processing blocks imported from other places, BDF is just the design file (cannot? make use of it)
-// read up about naming conventions etc, verilog is unwieldy
-
-// TODO:
-// check bus widths
-// finally plug this module into the board and test against real signals
-// add module for reading input from linux and pushing this one just once, then feeding zeroes
-// this module will properly trigger signals in other modules and will trigger effects? via pushbuttons and knobs
-// add module for writing to sdram
-// SPI to DAC - MASH?
-
-// DONE:
-// write a testbench for Synthesizer and test it offline - DONE, looks fine
-// write a python script for generation of data - DONE for sine
-// optimize waveform space constraints (store just quarter of full period)
-// add 'manager' module to ask for generation of signal from one of free pools
-// add the pool of currently available phase accumulator modules
 
 // KNOWLEDGE:
-// CURRENTLY 1 clock cycle delay, cannot be minimalized, demux current input and obtain value back has to work
-// Clock multiplier has to be wired before launching this module
-// SDRAM can be used as buffer for holding data, addressing is by 32 bits - 1 address (check it), obtain memory and map it
 // i_data 16'b0'1111111'xxxxxxxx is STOP_ALL cmd - there is no MIDI 0 available
 // DELAYS
 // 3 cycles sine generation from LUT
 // up to 10 cycles for one phase bank (to be available on output)
 // 2 cycles delay between valid input
 // after putting valid value, input 0s to prevent activation of new bank on next clock cycle
-
-// TIP: this is not C++/C, you connect wires to logic, no need for nesting modules (cascading), just connect it inside
 
 module bank_manager(input clk,
 						  input clk_slow,
