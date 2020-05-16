@@ -252,6 +252,14 @@
          type = "String";
       }
    }
+   element soc_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
    element synthesizer_0
    {
       datum _sortIndex
@@ -1258,7 +1266,9 @@
   <parameter name="gui_switchover_mode">Automatic Switchover</parameter>
   <parameter name="gui_use_locked" value="false" />
  </module>
- <module name="synthesizer_0" kind="synthesizer" version="1.0" enabled="1" />
+ <module name="synthesizer_0" kind="synthesizer" version="1.0" enabled="1">
+  <parameter name="NSAMPLES" value="100" />
+ </module>
  <module
    name="sysid_qsys"
    kind="altera_avalon_sysid_qsys"
@@ -1413,7 +1423,7 @@
  <connection
    kind="avalon_streaming"
    version="19.1"
-   start="synthesizer_0.avalon_streaming_source"
+   start="synthesizer_0.ss0"
    end="msgdma_0.st_sink" />
  <connection kind="clock" version="19.1" start="clk_0.clk" end="pll_100M.refclk" />
  <connection

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="soc_system" kind="soc_system" version="1.0" fabric="QSYS">
  <!-- Format version 19.1 670 (Future versions may contain additional information.) -->
- <!-- 2020.05.15.12:29:50 -->
+ <!-- 2020.05.16.15:33:32 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
-  <value>1589538576</value>
+  <value>1589635996</value>
   <derived>false</derived>
   <enabled>true</enabled>
   <visible>false</visible>
@@ -86785,6 +86785,14 @@ the requested settings for a module instance. -->
    <name>embeddedsw.dts.vendor</name>
    <value>jduchniewicz</value>
   </assignment>
+  <parameter name="NSAMPLES">
+   <type>int</type>
+   <value>100</value>
+   <derived>false</derived>
+   <enabled>true</enabled>
+   <visible>true</visible>
+   <valid>true</valid>
+  </parameter>
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
    <value>UNKNOWN</value>
@@ -87226,18 +87234,6 @@ parameters are a RESULT of the module parameters. -->
    <type>avalon</type>
    <isStart>false</isStart>
    <port>
-    <name>avs_s0_writedata</name>
-    <direction>Input</direction>
-    <width>32</width>
-    <role>writedata</role>
-   </port>
-   <port>
-    <name>avs_s0_readdata</name>
-    <direction>Output</direction>
-    <width>32</width>
-    <role>readdata</role>
-   </port>
-   <port>
     <name>avs_s0_write</name>
     <direction>Input</direction>
     <width>1</width>
@@ -87248,6 +87244,18 @@ parameters are a RESULT of the module parameters. -->
     <direction>Input</direction>
     <width>1</width>
     <role>read</role>
+   </port>
+   <port>
+    <name>avs_s0_writedata</name>
+    <direction>Input</direction>
+    <width>32</width>
+    <role>writedata</role>
+   </port>
+   <port>
+    <name>avs_s0_readdata</name>
+    <direction>Output</direction>
+    <width>32</width>
+    <role>readdata</role>
    </port>
   </interface>
   <interface name="dac_out" kind="conduit_end" version="19.1">
@@ -87292,13 +87300,10 @@ parameters are a RESULT of the module parameters. -->
     <name>o_dac_out</name>
     <direction>Output</direction>
     <width>1</width>
-    <role>writeresponsevalid_n</role>
+    <role>export</role>
    </port>
   </interface>
-  <interface
-     name="avalon_streaming_source"
-     kind="avalon_streaming_source"
-     version="19.1">
+  <interface name="ss0" kind="avalon_streaming_source" version="19.1">
    <!-- The connection points exposed by a module instance for the
 particular module parameters. Connection points and their
 parameters are a RESULT of the module parameters. -->
@@ -87417,7 +87422,7 @@ parameters are a RESULT of the module parameters. -->
    <type>avalon_streaming</type>
    <isStart>true</isStart>
    <port>
-    <name>avalon_streaming_source_data</name>
+    <name>aso_ss0_data</name>
     <direction>Output</direction>
     <width>32</width>
     <role>data</role>
@@ -87437,7 +87442,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.CMacro.TIMESTAMP</name>
-   <value>1589538576</value>
+   <value>1589635996</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.compatible</name>
@@ -87457,7 +87462,7 @@ the requested settings for a module instance. -->
   </assignment>
   <assignment>
    <name>embeddedsw.dts.params.timestamp</name>
-   <value>1589538576</value>
+   <value>1589635996</value>
   </assignment>
   <assignment>
    <name>embeddedsw.dts.vendor</name>
@@ -87473,7 +87478,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="timestamp">
    <type>int</type>
-   <value>1589538576</value>
+   <value>1589635996</value>
    <derived>true</derived>
    <enabled>false</enabled>
    <visible>false</visible>
@@ -98873,10 +98878,10 @@ parameters are a RESULT of the module parameters. -->
   <endConnectionPoint>f2h_sdram0_data</endConnectionPoint>
  </connection>
  <connection
-   name="synthesizer_0.avalon_streaming_source/msgdma_0.st_sink"
+   name="synthesizer_0.ss0/msgdma_0.st_sink"
    kind="avalon_streaming"
    version="19.1"
-   start="synthesizer_0.avalon_streaming_source"
+   start="synthesizer_0.ss0"
    end="msgdma_0.st_sink">
   <parameter name="deviceFamily">
    <type>java.lang.String</type>
@@ -98895,7 +98900,7 @@ parameters are a RESULT of the module parameters. -->
    <valid>true</valid>
   </parameter>
   <startModule>synthesizer_0</startModule>
-  <startConnectionPoint>avalon_streaming_source</startConnectionPoint>
+  <startConnectionPoint>ss0</startConnectionPoint>
   <endModule>msgdma_0</endModule>
   <endConnectionPoint>st_sink</endConnectionPoint>
  </connection>
