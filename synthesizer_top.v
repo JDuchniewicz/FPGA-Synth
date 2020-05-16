@@ -8,7 +8,8 @@ module synthesizer_top(input clk,
 							  input avs_s0_read, //read is not that important for now
 							  input [31:0] avs_s0_writedata, // control signals for writing and reading have to be added
 							  output [31:0] avs_s0_readdata,
-							  output o_dac_out);
+							  output o_dac_out,
+							  output [31:0] aso_s0_data);
 							  
 							  // IF I want to add a debug flash of LED or anything, a counduit is required to drive the signal out of the FPGA
 	
