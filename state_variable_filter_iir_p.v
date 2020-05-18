@@ -12,31 +12,27 @@ module state_variable_filter_iir_p(input clk,
 											);
 	parameter NBANKS = 10;
 	
-	reg signed[34:0] v1[NBANKS];
-	reg signed[34:0] v2[NBANKS];
-	reg signed[34:0] v3[NBANKS];
-	reg signed[34:0] ic1eq[NBANKS];
-	reg signed[34:0] ic2eq[NBANKS];
+	reg signed[34:0] v1[NBANKS-1:0];
+	reg signed[34:0] v2[NBANKS-1:0];
+	reg signed[34:0] v3[NBANKS-1:0];
+	reg signed[34:0] ic1eq[NBANKS-1:0];
+	reg signed[34:0] ic2eq[NBANKS-1:0];
 	
 	wire signed[34:0] w_a1, w_a2, w_a3;
 	
-	reg signed[34:0] r_a1[NBANKS];
-	reg signed[34:0] r_a2[NBANKS];
-	reg signed[34:0] r_a3[NBANKS];
-
-	reg[2:0] state[NBANKS];
-	reg[6:0] r_prev_midi[NBANKS];
+	reg[2:0] state[NBANKS-1:0];
+	reg[6:0] r_prev_midi[NBANKS-1:0];
 	
 	wire signed[64:0] mR_0, mR_1, mR_2, mR_3;
 	wire signed[34:0] w_extended_i_data;
 	
 	reg signed[34:0] r_m_a1, r_m_a2, r_m_a3, r_m_ic1eq, r_m_ic2eq, r_m_v2, r_m_v3;
-	reg signed[64:0] r_mR_0[NBANKS];
-	reg signed[64:0] r_mR_1[NBANKS];
-	reg signed[64:0] r_mR_2[NBANKS];
-	reg signed[64:0] r_mR_3[NBANKS];
+	reg signed[64:0] r_mR_0[NBANKS-1:0];
+	reg signed[64:0] r_mR_1[NBANKS-1:0];
+	reg signed[64:0] r_mR_2[NBANKS-1:0];
+	reg signed[64:0] r_mR_3[NBANKS-1:0];
 
-	reg signed[23:0] r_filtered[NBANKS];
+	reg signed[23:0] r_filtered[NBANKS-1:0];
 	
 	assign w_extended_i_data = {{3{i_data[23]}}, {i_data[22:0]}, 9'b0};
 	
@@ -72,10 +68,6 @@ module state_variable_filter_iir_p(input clk,
 			v3[i] = 35'b0;
 			ic1eq[i] = 35'b0;
 			ic2eq[i] = 35'b0;
-			
-			r_a1[i] = 35'b0;
-			r_a2[i] = 35'b0;
-			r_a3[i] = 35'b0;
 			
 			state[i] = 3'b0;
 			r_prev_midi[i] = 7'b0;
@@ -117,10 +109,6 @@ module state_variable_filter_iir_p(input clk,
 				ic1eq[i] <= 35'b0;
 				ic2eq[i] <= 35'b0;
 				
-				r_a1[i] <= 35'b0;
-				r_a2[i] <= 35'b0;
-				r_a3[i] <= 35'b0;
-				
 				state[i] <= 3'b0;
 				r_prev_midi[i] <= 7'b0;
 				
@@ -153,7 +141,13 @@ module state_variable_filter_iir_p(input clk,
 		end else if (clk_en) begin
 			if (i_midi !== r_prev_midi[v_idx]) begin // got a new midi recalc coeff
 				state[v_idx] <= 3'b0;
-			end else begin
+				// clear other registers?
+				v1[v_idx] <= 35'b0;
+				v2[v_idx] <= 35'b0;
+				v3[v_idx] <= 35'b0;
+				ic1eq[v_idx] <= 35'b0;
+				ic2eq[v_idx] <= 35'b0;
+			end else if (r_prev_midi[v_idx] !== 7'b0) begin // if the current value is a valid input
 				case (state[v_idx])
 					3'b000: begin
 						v3[v_idx] <= w_extended_i_data - ic2eq[v_idx]; // multiplication is already happening now v3 is correct
@@ -175,9 +169,9 @@ module state_variable_filter_iir_p(input clk,
 			
 			// pipeline logic
 			// input this iteration
-			r_m_a1 <= r_a1[v_idx];
-			r_m_a2 <= r_a2[v_idx];
-			r_m_a3 <= r_a3[v_idx];
+			r_m_a1 <= w_a1;
+			r_m_a2 <= w_a2;
+			r_m_a3 <= w_a3;
 			r_m_ic1eq <= ic1eq[v_idx];
 			r_m_ic2eq <= ic2eq[v_idx];
 			r_m_v2 <= v2[v_idx];
@@ -186,19 +180,11 @@ module state_variable_filter_iir_p(input clk,
 			
 			// collect last iteration
 			if (v_idx == 0) begin
-				r_a1[NBANKS - 1] <= w_a1;
-				r_a2[NBANKS - 1] <= w_a2;
-				r_a3[NBANKS - 1] <= w_a3;
-				
 				r_mR_0[NBANKS - 1] <= mR_0;
 				r_mR_1[NBANKS - 1] <= mR_1;
 				r_mR_2[NBANKS - 1] <= mR_2;
 				r_mR_3[NBANKS - 1] <= mR_3;
-			end else begin
-				r_a1[v_idx - 1] <= w_a1;
-				r_a2[v_idx - 1] <= w_a2;
-				r_a3[v_idx - 1] <= w_a3;
-				
+			end else begin	
 				r_mR_0[v_idx - 1] <= mR_0;
 				r_mR_1[v_idx - 1] <= mR_1;
 				r_mR_2[v_idx - 1] <= mR_2;
