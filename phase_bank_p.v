@@ -9,7 +9,7 @@ module phase_bank_p(input clk,
 						output reg[15:0] o_phase);
 		parameter NBANKS = 10;
 		
-		reg[15:0] phase_banks[NBANKS];
+		reg[15:0] phase_banks[NBANKS-1:0];
 		wire[15:0] w_tw;
 		
 		tuning_word_lut tw_lut(.i_midi(i_midi), .o_tw(w_tw));

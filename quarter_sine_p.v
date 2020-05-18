@@ -8,11 +8,11 @@ module quarter_sine_p(input clk,
 							input[15:0] i_phase,
 							input i_valid,
 							output reg o_valid,
-							output reg signed[23:0] o_val);
+							output reg signed[23:0] o_sine);
 		parameter NBANKS = 10;
 		
-		reg r_negate[2][NBANKS];
-		reg signed[23:0] r_lut_sine[NBANKS];
+		reg r_negate[1:0][NBANKS-1:0];
+		reg signed[23:0] r_lut_sine[NBANKS-1:0];
 		
 		reg signed[13:0] r_cur_index;
 		wire[23:0] w_sine_out;
@@ -23,7 +23,7 @@ module quarter_sine_p(input clk,
 		integer i, j;
 		
 		initial begin
-			o_val = 16'b0;
+			o_sine = 16'b0;
 			v_idx = 8; // delay of 2 computation blocks
 			r_cur_index = 14'b0;
 			for (i = 0; i < NBANKS; i = i + 1) begin
@@ -37,7 +37,7 @@ module quarter_sine_p(input clk,
 		
 		always @(posedge clk or posedge rst) begin
 			if (rst) begin
-				o_val <= 16'b0;
+				o_sine <= 16'b0;
 				v_idx <= 8; // delay of 2 computation blocks
 				r_cur_index <= 14'b0;
 				for (i = 0; i < NBANKS; i = i + 1) begin
@@ -64,14 +64,14 @@ module quarter_sine_p(input clk,
 				//clock three
 				if (v_idx == 0) begin
 					if (r_negate[1][NBANKS - 1])
-						o_val <= -r_lut_sine[NBANKS - 1];
+						o_sine <= -r_lut_sine[NBANKS - 1];
 					else
-						o_val <= r_lut_sine[NBANKS - 1];
+						o_sine <= r_lut_sine[NBANKS - 1];
 				end else begin
 					if (r_negate[1][v_idx - 1])
-						o_val <= -r_lut_sine[v_idx - 1];
+						o_sine <= -r_lut_sine[v_idx - 1];
 					else
-						o_val <= r_lut_sine[v_idx - 1];
+						o_sine <= r_lut_sine[v_idx - 1];
 				end
 					
 				o_valid <= i_valid; // do not care for the delay in computation
