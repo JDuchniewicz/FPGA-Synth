@@ -31,21 +31,16 @@ module phase_bank_p(input clk,
 				o_phase = 16'b0;
 				v_idx = 9;
 				for (i = 0; i < NBANKS; i = i + 1) begin
-				phase_banks[i] <= 16'b0;
+					phase_banks[i] <= 16'b0;
 				end
 				o_midi <= 7'b0;
 			end else if (clk_en) begin
 				if (i_midi !== 7'h0) begin
-					o_phase <= phase_banks[v_idx]; // output a delayed value (one whole loop)
+					phase_banks[v_idx] <= phase_banks[v_idx] + w_tw;
+					o_phase <= phase_banks[v_idx] + w_tw; // output a delayed value (one whole loop)
 				end else begin
 					o_phase <= 16'b0;
 				end
-				
-				// should keep on calculating even though current value is invalid (pipelining works like this)
-				if (v_idx == 0)  // tw is 1 cycle late
-					phase_banks[NBANKS - 1] <= phase_banks[NBANKS - 1] + w_tw;
-				else
-					phase_banks[v_idx - 1] <= phase_banks[v_idx - 1] + w_tw;
 					
 				o_valid <= (i_midi == 7'h0) ? 1'b0 : 1'b1;
 				o_midi <= i_midi;
