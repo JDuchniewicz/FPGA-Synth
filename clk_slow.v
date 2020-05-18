@@ -7,7 +7,10 @@ module clk_slow #(parameter FREQ = 1) (
 		
 	reg [26:0] counter;
 	
-	initial counter = 27'b0;
+	initial begin
+		counter = 27'b0;
+		clk_out = 1'b0;
+	end
 	
 	always @(posedge clk or posedge rst) begin
 		if (rst) begin

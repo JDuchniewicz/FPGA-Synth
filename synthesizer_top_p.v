@@ -7,12 +7,13 @@ module synthesizer_top_p(input clk,
 							  input [31:0] avs_s0_writedata, // control signals for writing and reading have to be added
 							  output [31:0] avs_s0_readdata,
 							  output o_dac_out,
-							  output reg [31:0] aso_s0_data);
+							  output reg [31:0] aso_ss0_data,
+							  output [23:0] current_out); //debug value
 	
 	parameter NSAMPLES = 100;
 	
 	// a ring buffer sample storage
-	reg [23:0] mixed_samples[NSAMPLES];
+	reg [23:0] mixed_samples[NSAMPLES-1:0];
 	reg [15:0]	r_oneshot_data; // incoming signal
 	reg clk_en;
 	integer read;
@@ -25,6 +26,8 @@ module synthesizer_top_p(input clk,
 	wire signed[23:0] w_mixed_sample;
 	
 	wire w_clk_96k;
+	
+	assign current_out = w_osignal;
 	
 	clk_slow #(96_000) clk_96k(.clk(clk), .rst(reset), .clk_out(w_clk_96k)); // 96kHz
 	
@@ -50,6 +53,7 @@ module synthesizer_top_p(input clk,
 		write = 1;
 		clk_en = 1'b1;
 		r_dac_in = 24'b0;
+		aso_ss0_data = 32'b0;
 	end
 	
 	// generator and system clock
@@ -83,18 +87,19 @@ module synthesizer_top_p(input clk,
 	end
 	
 	// clock for DAC sampling (read==write will not happen?)
-	always @(posedge clk_96k or posedge reset) begin
+	always @(posedge w_clk_96k or posedge reset) begin
 		if (reset) begin
 			read <= 0;
 			r_dac_in <= 24'b0;
+			aso_ss0_data <= 32'b0;
 		end else
 		if (read == NSAMPLES) begin // FINISH this concept and then try compiling everything, get the signal out on the GPIO, check what is being output
 			r_dac_in <= mixed_samples[NSAMPLES];
-			aso_s0_data <= mixed_samples[NSAMPLES]; // for now write mixed value (can write them 1by1 though)
+			aso_ss0_data <= mixed_samples[NSAMPLES]; // for now write mixed value (can write them 1by1 though)
 			read <= 0;
 		end else begin
 			r_dac_in <= mixed_samples[read];
-			aso_s0_data <= mixed_samples[read];
+			aso_ss0_data <= mixed_samples[read];
 			read <= read + 1;
 		end
 	end

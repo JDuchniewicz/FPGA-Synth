@@ -12,18 +12,21 @@ module synthesizer_top_tb;
 	
 	// out
 	wire [15:0] w_signal;
-	wire [31:0] avalon_write_data, avalon_read_data;
+	wire [31:0] avalon_write_data, avalon_read_data, aso_read_data;
+	wire dac_out;
 	
 	// simulate Avalon write issuing, trigger write for one cycle
-	synthesizer_top synth(.clk(clk), 
+	synthesizer_top_p synth(.clk(clk), 
 								.reset(reset),
 							   .avs_s0_write(write),
 							   .avs_s0_read(read),
 							   .avs_s0_writedata(avalon_write_data),
-							   .avs_s0_readdata(avalon_read_data));
+							   .avs_s0_readdata(avalon_read_data),
+								.o_dac_out(dac_out),
+								.aso_ss0_data(aso_read_data),
+								.current_out(w_signal));
 								
 	assign avalon_write_data = { {16{1'b0}}, r_data };
-	assign w_signal = avalon_read_data[15:0]; // output signal width will change
 
 	initial begin
 		clk = 0;
@@ -41,8 +44,9 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#10
 	write = 1'b0;
+	#10000
 	
-	#2200
+	#10
 	r_data = 16'b0_1000101_0000_0000; //STOP A4
 	write = 1'b1;
 	#10
