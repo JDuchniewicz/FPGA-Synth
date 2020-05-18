@@ -5,7 +5,8 @@ module mixer(input clk,
 				 input clk_en,
 				 input rst,
 				 input signed[23:0] i_data,
-				 output reg signed[23:0] o_mixed);
+				 output reg signed[23:0] o_mixed,
+				 output reg o_rdy);
 	
 	reg signed[23:0] r_mixed;
 	integer v_idx;
@@ -13,6 +14,7 @@ module mixer(input clk,
 	initial begin
 		r_mixed = 24'b0;
 		o_mixed = 24'b0;
+		o_rdy = 1'b0;
 		v_idx = 0;
 	end
 	
@@ -20,6 +22,7 @@ module mixer(input clk,
 		if (rst) begin
 			r_mixed <= 24'b0;
 			o_mixed <= 24'b0;
+			o_rdy <= 1'b0;
 			v_idx <= 0;
 		end 
 		
@@ -27,16 +30,19 @@ module mixer(input clk,
 			if (v_idx === 9) begin
 				o_mixed <= r_mixed + (i_data >>> 4); // scale the input to prevent overflow
 				r_mixed <= 24'b0;
+				o_rdy <= 1'b1;	
 				v_idx <= 0;
 			end else begin
 				o_mixed <= 24'b0;
 				r_mixed <= r_mixed + (i_data >>> 4);
 				v_idx <= v_idx + 1;
+				o_rdy <= 1'b0;
 			end
 		end else begin // counter not active - retain old values
 			v_idx <= v_idx;
 			r_mixed <= r_mixed;
 			o_mixed <= o_mixed;
+			o_rdy <= 1'b0;
 		end
 	end
 				
