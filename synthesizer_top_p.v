@@ -7,8 +7,8 @@ module synthesizer_top_p(input clk,
 							  input [31:0] avs_s0_writedata, // control signals for writing and reading have to be added
 							  output [31:0] avs_s0_readdata,
 							  output o_dac_out,
-							  output reg [31:0] aso_ss0_data,
-							  output [23:0] current_out); //debug value
+							  output reg [31:0] aso_ss0_data);
+							  //output [23:0] current_out); //debug value
 	
 	parameter NSAMPLES = 100;
 	
@@ -23,6 +23,7 @@ module synthesizer_top_p(input clk,
 	reg signed[23:0] r_dac_in;
 	
 	wire[23:0] w_osignal;
+	wire w_rdy;
 	wire signed[23:0] w_mixed_sample;
 	
 	wire w_clk_96k;
@@ -36,7 +37,7 @@ module synthesizer_top_p(input clk,
 	// global modules like noise adders may be present here and wired to bm
 	// bm manages pipelines which perform all steps of signal processing and output ready signal via bm
 	
-	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal), .o_mixed(w_mixed_sample)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
+	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
 	dac_dsm2_top dac(.din(r_dac_in), .dout(o_dac_out), .clk(w_clk_96k), .n_rst(~reset)); // DAC MASH from WZab
 	
 	// stages of pipeline:
@@ -62,20 +63,20 @@ module synthesizer_top_p(input clk,
 			r_oneshot_data <= 16'b0;
 			write <= 1;
 			clk_en <= 1'b0;
-		end else begin 		
-			// temporary implementation before pipelining is finished
+		end else begin 
+	// this logic has to be turned off for simulating -> too slow clock for sampling
 			if (read == write) begin // written enough samples, wait until free slot available
 				clk_en <= 1'b0;
-			end else if (write == NSAMPLES) begin
+			end else if (write == NSAMPLES && w_rdy) begin // write only when assembled a full sample
 				mixed_samples[write] <= w_mixed_sample;
 				write <= 0;
 				clk_en <= 1'b1;
-			end else begin
+			end else if (w_rdy) begin
 				mixed_samples[write] <= w_mixed_sample;
 				write <= write + 1;
 				clk_en <= 1'b1;
 			end
-				
+
 			// Avalon communication logic
 			if (avs_s0_write) begin
 				r_oneshot_data <= avs_s0_writedata[15:0];
@@ -85,7 +86,7 @@ module synthesizer_top_p(input clk,
 			end
 		end
 	end
-	
+
 	// clock for DAC sampling (read==write will not happen?)
 	always @(posedge w_clk_96k or posedge reset) begin
 		if (reset) begin
@@ -102,6 +103,6 @@ module synthesizer_top_p(input clk,
 			aso_ss0_data <= mixed_samples[read];
 			read <= read + 1;
 		end
-	end
+	end	
 					 
 endmodule
