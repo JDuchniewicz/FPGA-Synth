@@ -28,7 +28,8 @@ module synthesizer_top_p(input clk,
 	
 	wire w_clk_96k;
 	
-	assign current_out = w_osignal;
+	//DEBUG
+	//assign current_out = w_osignal;
 	
 	clk_slow #(96_000) clk_96k(.clk(clk), .rst(reset), .clk_out(w_clk_96k)); // 96kHz
 	
@@ -67,13 +68,15 @@ module synthesizer_top_p(input clk,
 	// this logic has to be turned off for simulating -> too slow clock for sampling
 			if (read == write) begin // written enough samples, wait until free slot available
 				clk_en <= 1'b0;
-			end else if (write == NSAMPLES && w_rdy) begin // write only when assembled a full sample
-				mixed_samples[write] <= w_mixed_sample;
-				write <= 0;
-				clk_en <= 1'b1;
-			end else if (w_rdy) begin
-				mixed_samples[write] <= w_mixed_sample;
-				write <= write + 1;
+			end else begin 
+				if (w_rdy) begin // if got a full 10 batch
+					mixed_samples[write] <= w_mixed_sample;
+					if (write == NSAMPLES) begin
+						write <= 0;
+					end else begin
+						write <= write + 1;
+					end
+				end
 				clk_en <= 1'b1;
 			end
 
