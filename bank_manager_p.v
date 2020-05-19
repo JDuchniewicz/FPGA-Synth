@@ -40,7 +40,7 @@ module bank_manager_p(input clk,
 							  .i_valid(w_pb_valid), 
 							  .o_valid(w_qs_valid), 
 							  .o_sine(w_qs_out));
-							  
+		/*					  // TODO debug why it does not work + check why one sound is not being played back, seems like something with indexing, FIX output values for midi 00 -> should not take anything from LUT but take 0x0 (check glitchy sound?)
 	state_variable_filter_iir_p SVF(.clk(clk),
 											  .clk_en(clk_en), 
 											  .rst(reset), 
@@ -50,7 +50,7 @@ module bank_manager_p(input clk,
 											  .i_valid(w_qs_valid), 
 											  .o_valid(w_svf_valid), 
 											  .o_filtered(w_svf_out)); // should svf be informed that the signal is ready? how? (sine lut can count but meh, )
-											  
+			*/								  
 											  	
 	integer v_idx; // every element of the pipeline is delayed in terms of id
 	integer i;
@@ -130,8 +130,8 @@ module bank_manager_p(input clk,
 				r_cur_midi <= midi_vals[v_idx]; // if 7'h0 then invalid
 				
 				// change when adding more elements to pipeline
-				if (w_svf_valid) begin
-					o_signal <= w_svf_out;
+				if (w_qs_valid) begin // TODO LP turned off, changed from w_svf_valid
+					o_signal <= w_qs_out; // w_svf_out
 				end
 				
 				if (v_idx == NBANKS - 1)
