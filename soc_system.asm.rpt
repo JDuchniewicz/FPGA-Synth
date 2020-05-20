@@ -1,5 +1,5 @@
 Assembler report for soc_system
-Tue May 19 18:04:51 2020
+Wed May 20 13:03:59 2020
 Quartus Prime Version 19.1.0 Build 670 09/22/2019 SJ Lite Edition
 
 
@@ -39,7 +39,7 @@ https://fpgasoftware.intel.com/eula.
 +---------------------------------------------------------------+
 ; Assembler Summary                                             ;
 +-----------------------+---------------------------------------+
-; Assembler Status      ; Successful - Tue May 19 18:04:51 2020 ;
+; Assembler Status      ; Successful - Wed May 20 13:03:59 2020 ;
 ; Revision Name         ; soc_system                            ;
 ; Top-level Entity Name ; ghrd                                  ;
 ; Family                ; Cyclone V                             ;
@@ -78,8 +78,8 @@ https://fpgasoftware.intel.com/eula.
 +----------------+-------------------------+
 ; Option         ; Setting                 ;
 +----------------+-------------------------+
-; JTAG usercode  ; 0x06E8225F              ;
-; Checksum       ; 0x06E8225F              ;
+; JTAG usercode  ; 0x06E8301C              ;
+; Checksum       ; 0x06E8301C              ;
 +----------------+-------------------------+
 
 
@@ -89,13 +89,13 @@ https://fpgasoftware.intel.com/eula.
 Info: *******************************************************************
 Info: Running Quartus Prime Assembler
     Info: Version 19.1.0 Build 670 09/22/2019 SJ Lite Edition
-    Info: Processing started: Tue May 19 18:04:35 2020
+    Info: Processing started: Wed May 20 13:03:43 2020
 Info: Command: quartus_asm --read_settings_files=off --write_settings_files=off soc_system -c soc_system
 Info (115030): Assembler is generating device programming files
 Info (11878): Hard Processor Subsystem configuration has not changed and a Preloader software update is not required
 Info: Quartus Prime Assembler was successful. 0 errors, 0 warnings
-    Info: Peak virtual memory: 1159 megabytes
-    Info: Processing ended: Tue May 19 18:04:51 2020
+    Info: Peak virtual memory: 1162 megabytes
+    Info: Processing ended: Wed May 20 13:03:59 2020
     Info: Elapsed time: 00:00:16
     Info: Total CPU time (on all processors): 00:00:16
 
