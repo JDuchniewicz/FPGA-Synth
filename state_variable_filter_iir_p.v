@@ -20,21 +20,15 @@ module state_variable_filter_iir_p(input clk,
 	
 	wire signed[34:0] w_a1, w_a2, w_a3;
 	
-	reg[2:0] state[NBANKS-1:0];
-	reg[6:0] r_prev_midi[NBANKS-1:0];
-	
 	wire signed[64:0] mR_0, mR_1, mR_2, mR_3;
-	wire signed[34:0] w_extended_i_data;
 	
-	reg signed[34:0] r_m_a1, r_m_a2, r_m_a3, r_m_ic1eq, r_m_ic2eq, r_m_v2, r_m_v3;
-	reg signed[64:0] r_mR_0[NBANKS-1:0];
-	reg signed[64:0] r_mR_1[NBANKS-1:0];
-	reg signed[64:0] r_mR_2[NBANKS-1:0];
-	reg signed[64:0] r_mR_3[NBANKS-1:0];
-
-	reg signed[23:0] r_filtered[NBANKS-1:0];
+	reg signed[34:0] r_m_a1, r_m_a2, r_m_a3, r_m_ic1eq, r_m_v3;
 	
-	assign w_extended_i_data = {{3{i_data[23]}}, {i_data[22:0]}, 9'b0};
+	// for buffering values
+	reg valid[2:0];
+	reg[6:0] midi[2:0];
+	reg signed[34:0] r_ext_i_data;
+	
 	
 	reg[4:0] 		d0, d1, d2, d3, d4, d5, d6, d7; //dummy registeres
 	wire[14:0] 		dm0, dm1, dm2, dm3;//dummy wires for driving the multipliers (cannot be left floating)
@@ -68,25 +62,17 @@ module state_variable_filter_iir_p(input clk,
 			v3[i] = 35'b0;
 			ic1eq[i] = 35'b0;
 			ic2eq[i] = 35'b0;
-			
-			state[i] = 3'b0;
-			r_prev_midi[i] = 7'b0;
-			
-			r_mR_0[i] = 65'b0;
-			r_mR_1[i] = 65'b0;
-			r_mR_2[i] = 65'b0;
-			r_mR_3[i] = 65'b0;
-			
-			r_filtered[i] = 24'b0;
 		end
-		
+		for (i = 0; i < 3; i = i + 1) begin
+			valid[i] = 1'b0;
+			midi[i] = 7'b0;
+		end
 		r_m_a1 = 35'b0;
 		r_m_a2 = 35'b0;
 		r_m_a3 = 35'b0;
 		r_m_ic1eq = 35'b0;
-		r_m_ic2eq = 35'b0;
-		r_m_v2 = 35'b0;
 		r_m_v3 = 35'b0;
+		r_ext_i_data = 35'b0;
 		
 		d0 = 5'b0;
 		d1 = 5'b0;
@@ -97,7 +83,7 @@ module state_variable_filter_iir_p(input clk,
 		d6 = 5'b0;
 		d7 = 5'b0;
 		
-		v_idx = 7;
+		v_idx = 5;
 	end
 	
 	always @(posedge clk or posedge rst) begin
@@ -107,26 +93,18 @@ module state_variable_filter_iir_p(input clk,
 				v2[i] <= 35'b0;
 				v3[i] <= 35'b0;
 				ic1eq[i] <= 35'b0;
-				ic2eq[i] <= 35'b0;
-				
-				state[i] <= 3'b0;
-				r_prev_midi[i] <= 7'b0;
-				
-				r_mR_0[i] <= 65'b0;
-				r_mR_1[i] <= 65'b0;
-				r_mR_2[i] <= 65'b0;
-				r_mR_3[i] <= 65'b0;
-				
-				r_filtered[i] <= 24'b0;
+				ic2eq[i] <= 35'b0;		
 			end
-			
+			for (i = 0; i < 3; i = i + 1) begin
+				valid[i] <= 1'b0;
+				midi[i] <= 7'b0;
+			end
 			r_m_a1 <= 35'b0;
 			r_m_a2 <= 35'b0;
 			r_m_a3 <= 35'b0;
 			r_m_ic1eq <= 35'b0;
-			r_m_ic2eq <= 35'b0;
-			r_m_v2 <= 35'b0;
 			r_m_v3 <= 35'b0;
+			r_ext_i_data <= 35'b0;
 			
 			d0 <= 5'b0;
 			d1 <= 5'b0;
@@ -137,64 +115,80 @@ module state_variable_filter_iir_p(input clk,
 			d6 <= 5'b0;
 			d7 <= 5'b0;
 			
-			v_idx <= 7;
+			v_idx <= 5;
 		end else if (clk_en) begin
-			if (i_midi !== r_prev_midi[v_idx]) begin // got a new midi recalc coeff
-				state[v_idx] <= 3'b0;
-				// clear other registers?
+			// four cycles of delay - sine-like solution
+			// first cycle calc coefficients -> clear registers if midi 00
+			if (i_midi == 7'b0) begin
 				v1[v_idx] <= 35'b0;
 				v2[v_idx] <= 35'b0;
 				v3[v_idx] <= 35'b0;
 				ic1eq[v_idx] <= 35'b0;
 				ic2eq[v_idx] <= 35'b0;
-			end else if (r_prev_midi[v_idx] !== 7'b0) begin // if the current value is a valid input
-				case (state[v_idx])
-					3'b000: begin
-						v3[v_idx] <= w_extended_i_data - ic2eq[v_idx]; // multiplication is already happening now v3 is correct
-						state[v_idx] <= 3'b001;
-					end
-					3'b001: begin
-						v1[v_idx] <= (r_mR_0[v_idx] >>> 31) + (r_mR_1[v_idx] >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
-						v2[v_idx] <= ic2eq[v_idx] + (r_mR_2[v_idx] >>> 31) + (r_mR_3[v_idx] >>> 31); // should this be a shift or (TODO: this could probably need a greater width...?)
-						state[v_idx] <= 3'b010;
-					end
-					3'b010: begin
-						ic1eq[v_idx] <= (v1[v_idx] <<< 2) - ic1eq[v_idx];
-						ic2eq[v_idx] <= (v2[v_idx] <<< 2) - ic2eq[v_idx];
-						state[v_idx] <= 3'b000;
-					end
-				endcase
-			end
-		
+			end else begin
 			
-			// pipeline logic
-			// input this iteration
+			// second cycle -> start multiplication
 			r_m_a1 <= w_a1;
 			r_m_a2 <= w_a2;
 			r_m_a3 <= w_a3;
-			r_m_ic1eq <= ic1eq[v_idx];
-			r_m_ic2eq <= ic2eq[v_idx];
-			r_m_v2 <= v2[v_idx];
-			r_m_v3 <= v3[v_idx];
-			r_filtered[v_idx] <= {v2[v_idx][32], v2[v_idx][31:9]}; // cut out bits because some are in Q2.31, copy sign bit and shift just Q0.24 part
-			
-			// collect last iteration
 			if (v_idx == 0) begin
-				r_mR_0[NBANKS - 1] <= mR_0;
-				r_mR_1[NBANKS - 1] <= mR_1;
-				r_mR_2[NBANKS - 1] <= mR_2;
-				r_mR_3[NBANKS - 1] <= mR_3;
-			end else begin	
-				r_mR_0[v_idx - 1] <= mR_0;
-				r_mR_1[v_idx - 1] <= mR_1;
-				r_mR_2[v_idx - 1] <= mR_2;
-				r_mR_3[v_idx - 1] <= mR_3;
+				// filter step
+				v3[NBANKS - 1] <= r_ext_i_data - ic2eq[NBANKS - 1];
+				// fill the lpm_multiplier
+				r_m_ic1eq <= ic1eq[NBANKS - 1];
+				r_m_v3 <= r_ext_i_data - ic2eq[NBANKS - 1]; // to prevent 1 cycle delay
+			end else begin
+				// filter step
+				v3[v_idx - 1] <= r_ext_i_data - ic2eq[v_idx - 1];
+				// fill the lpm_multiplier
+				r_m_ic1eq <= ic1eq[v_idx - 1];
+				r_m_v3 <= r_ext_i_data - ic2eq[v_idx - 1]; // to prevent 1 cycle delay
+			end
+
+			// third cycle -> obtain multiplication results
+			if (v_idx == 0) begin
+				v1[NBANKS - 2] <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
+				v2[NBANKS - 2] <= ic2eq[NBANKS - 2] + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or (TODO: this could probably need a greater width...?)
+			end else if (v_idx == 1) begin
+				v1[NBANKS - 1] <= (mR_0 >>> 31) + (mR_1 >>> 31);
+				v2[NBANKS - 1] <= ic2eq[NBANKS - 1] + (mR_2 >>> 31) + (mR_3 >>> 31);
+			end else begin
+				v1[v_idx - 2] <= (mR_0 >>> 31) + (mR_1 >>> 31);
+				v2[v_idx - 2] <= ic2eq[v_idx - 2] + (mR_2 >>> 31) + (mR_3 >>> 31);
+			end
+
+			// fourth cycle -> last steps and output result
+			if (v_idx == 0) begin
+				ic1eq[NBANKS - 3] <= (v1[NBANKS - 3] <<< 2) - ic1eq[NBANKS - 3];
+				ic2eq[NBANKS - 3] <= (v2[NBANKS - 3] <<< 2) - ic2eq[NBANKS - 3];
+				o_filtered <= {v2[NBANKS - 3][32], v2[NBANKS - 3][31:9]};
+			end else if (v_idx == 1) begin
+				ic1eq[NBANKS - 2] <= (v1[NBANKS - 2] <<< 2) - ic1eq[NBANKS - 2];
+				ic2eq[NBANKS - 2] <= (v2[NBANKS - 2] <<< 2) - ic2eq[NBANKS - 2];
+				o_filtered <= {v2[NBANKS - 2][32], v2[NBANKS - 2][31:9]};		
+			end else if (v_idx == 2) begin
+				ic1eq[NBANKS - 1] <= (v1[NBANKS - 1] <<< 2) - ic1eq[NBANKS - 1];
+				ic2eq[NBANKS - 1] <= (v2[NBANKS - 1] <<< 2) - ic2eq[NBANKS - 1];
+				o_filtered <= {v2[NBANKS - 1][32], v2[NBANKS - 1][31:9]};
+			end else begin
+				ic1eq[v_idx - 3] <= (v1[v_idx - 3] <<< 2) - ic1eq[v_idx - 3];
+				ic2eq[v_idx - 3] <= (v2[v_idx - 3] <<< 2) - ic2eq[v_idx - 3];
+				o_filtered <= {v2[v_idx - 3][32], v2[v_idx - 3][31:9]};				
 			end
 			
-			r_prev_midi[v_idx] <= i_midi;
-			o_valid <= i_valid;
-			o_midi <= i_midi;
-			o_filtered <= r_filtered[v_idx]; // output last cycle's value
+			// move valid value
+			valid[0] <= i_valid;
+			valid[1] <= valid[0];
+			valid[2] <= valid[1];
+			o_valid <= valid[2];
+			
+			// move midi value
+			midi[0] <= i_midi;
+			midi[1] <= midi[0];
+			midi[2] <= midi[1];
+			o_midi <= midi[2];
+			
+			r_ext_i_data <= {{3{i_data[23]}}, {i_data[22:0]}, 9'b0};
 			
 			if (v_idx == NBANKS - 1)
 				v_idx <= 0;
