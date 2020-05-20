@@ -14,6 +14,10 @@ module quarter_sine_p(input clk,
 		reg r_negate[1:0][NBANKS-1:0];
 		reg signed[23:0] r_lut_sine[NBANKS-1:0];
 		
+		// for buffering values
+		reg valid[1:0];
+		reg[6:0] midi[1:0];
+		
 		reg signed[13:0] r_cur_index;
 		wire[23:0] w_sine_out;
 		
@@ -32,6 +36,10 @@ module quarter_sine_p(input clk,
 				end
 				r_lut_sine[i] = 24'b0;
 			end
+			for (i = 0; i < 2; i = i + 1) begin
+				valid[i] = 1'b0;
+				midi[i] = 7'b0;
+			end
 			o_midi = 7'b0;
 		end
 		
@@ -45,6 +53,10 @@ module quarter_sine_p(input clk,
 						r_negate[j][i] <= 1'b0;
 					end
 					r_lut_sine[i] <= 24'b0;
+				end
+				for (i = 0; i < 2; i = i + 1) begin
+					valid[i] <= 1'b0;
+					midi[i] <= 7'b0;
 				end
 				o_midi <= 7'b0;
 			end else if(clk_en) begin
@@ -62,20 +74,35 @@ module quarter_sine_p(input clk,
 				end
 				
 				//clock three
-				if (v_idx == 0) begin
-					if (r_negate[1][NBANKS - 1])
-						o_sine <= -r_lut_sine[NBANKS - 1];
-					else
-						o_sine <= r_lut_sine[NBANKS - 1];
+				if (valid[1]) begin // output only valid values
+					if (v_idx == 0) begin
+						if (r_negate[1][NBANKS - 2])
+							o_sine <= -r_lut_sine[NBANKS - 2];
+						else
+							o_sine <= r_lut_sine[NBANKS - 2];
+					end else if (v_idx == 1) begin
+						if (r_negate[1][NBANKS - 1])
+							o_sine <= -r_lut_sine[NBANKS - 1];
+						else
+							o_sine <= r_lut_sine[NBANKS - 1];
+					end else begin
+						if (r_negate[1][v_idx - 2])
+							o_sine <= -r_lut_sine[v_idx - 2];
+						else
+							o_sine <= r_lut_sine[v_idx - 2];
+					end
 				end else begin
-					if (r_negate[1][v_idx - 1])
-						o_sine <= -r_lut_sine[v_idx - 1];
-					else
-						o_sine <= r_lut_sine[v_idx - 1];
+					o_sine <= 24'b0;
 				end
-					
-				o_valid <= i_valid; // do not care for the delay in computation
-				o_midi <= i_midi;
+				// move valid value
+				valid[0] <= i_valid;
+				valid[1] <= valid[0];
+				o_valid <= valid[1];
+				
+				// move midi value
+				midi[0] <= i_midi;
+				midi[1] <= midi[0];
+				o_midi <= midi[1];
 				
 				if (v_idx == NBANKS - 1)
 					v_idx <= 0;
