@@ -19,16 +19,15 @@ module state_variable_filter_iir_p(input clk,
 	reg signed[34:0] ic2eq[NBANKS-1:0];
 	
 	wire signed[34:0] w_a1, w_a2, w_a3;
-	
 	wire signed[64:0] mR_0, mR_1, mR_2, mR_3;
 	
 	reg signed[34:0] r_m_a1, r_m_a2, r_m_a3, r_m_ic1eq, r_m_v3;
 	
 	// for buffering values
-	reg valid[2:0];
-	reg[6:0] midi[2:0];
-	reg signed[34:0] r_ext_i_data;
+	reg valid[1:0];
+	reg[6:0] midi[1:0];
 	
+	wire signed[34:0] w_extended_i_data;
 	
 	reg[4:0] 		d0, d1, d2, d3, d4, d5, d6, d7; //dummy registeres
 	wire[14:0] 		dm0, dm1, dm2, dm3;//dummy wires for driving the multipliers (cannot be left floating)
@@ -55,6 +54,8 @@ module state_variable_filter_iir_p(input clk,
 	integer v_idx;
 	integer i;
 	
+	assign w_extended_i_data = {{3{i_data[23]}}, {i_data[22:0]}, 9'b0};
+
 	initial begin
 		for (i = 0; i < NBANKS; i = i + 1) begin
 			v1[i] = 35'b0;
@@ -63,7 +64,7 @@ module state_variable_filter_iir_p(input clk,
 			ic1eq[i] = 35'b0;
 			ic2eq[i] = 35'b0;
 		end
-		for (i = 0; i < 3; i = i + 1) begin
+		for (i = 0; i < 2; i = i + 1) begin
 			valid[i] = 1'b0;
 			midi[i] = 7'b0;
 		end
@@ -72,7 +73,6 @@ module state_variable_filter_iir_p(input clk,
 		r_m_a3 = 35'b0;
 		r_m_ic1eq = 35'b0;
 		r_m_v3 = 35'b0;
-		r_ext_i_data = 35'b0;
 		
 		d0 = 5'b0;
 		d1 = 5'b0;
@@ -95,7 +95,7 @@ module state_variable_filter_iir_p(input clk,
 				ic1eq[i] <= 35'b0;
 				ic2eq[i] <= 35'b0;		
 			end
-			for (i = 0; i < 3; i = i + 1) begin
+			for (i = 0; i < 2; i = i + 1) begin
 				valid[i] <= 1'b0;
 				midi[i] <= 7'b0;
 			end
@@ -104,7 +104,6 @@ module state_variable_filter_iir_p(input clk,
 			r_m_a3 <= 35'b0;
 			r_m_ic1eq <= 35'b0;
 			r_m_v3 <= 35'b0;
-			r_ext_i_data <= 35'b0;
 			
 			d0 <= 5'b0;
 			d1 <= 5'b0;
@@ -117,7 +116,7 @@ module state_variable_filter_iir_p(input clk,
 			
 			v_idx <= 5;
 		end else if (clk_en) begin
-			// four cycles of delay - sine-like solution
+			// three cycles of delay - sine-like solution
 			// first cycle calc coefficients -> clear registers if midi 00
 			if (i_midi == 7'b0) begin
 				v1[v_idx] <= 35'b0;
@@ -125,70 +124,56 @@ module state_variable_filter_iir_p(input clk,
 				v3[v_idx] <= 35'b0;
 				ic1eq[v_idx] <= 35'b0;
 				ic2eq[v_idx] <= 35'b0;
+				// fill the lpm_multiplier
+				r_m_a1 <= 35'b0;
+				r_m_a2 <= 35'b0;
+				r_m_a3 <= 35'b0;
+				r_m_ic1eq <= 35'b0;
+				r_m_v3 <= 35'b0;
 			end else begin
+				// fill the lpm_multiplier
+				r_m_a1 <= w_a1;
+				r_m_a2 <= w_a2;
+				r_m_a3 <= w_a3;
+				r_m_ic1eq <= ic1eq[v_idx];
+				r_m_v3 <= w_extended_i_data - ic2eq[v_idx]; // to prevent 1 cycle delay
+				// filter step
+				v3[v_idx] <= w_extended_i_data - ic2eq[v_idx];
+			end
 			
-			// second cycle -> start multiplication
-			r_m_a1 <= w_a1;
-			r_m_a2 <= w_a2;
-			r_m_a3 <= w_a3;
+			// second cycle -> obtain multiplication results
 			if (v_idx == 0) begin
-				// filter step
-				v3[NBANKS - 1] <= r_ext_i_data - ic2eq[NBANKS - 1];
-				// fill the lpm_multiplier
-				r_m_ic1eq <= ic1eq[NBANKS - 1];
-				r_m_v3 <= r_ext_i_data - ic2eq[NBANKS - 1]; // to prevent 1 cycle delay
+				v1[NBANKS - 1] <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
+				v2[NBANKS - 1] <= ic2eq[NBANKS - 1] + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or (TODO: this could probably need a greater width...?)
 			end else begin
-				// filter step
-				v3[v_idx - 1] <= r_ext_i_data - ic2eq[v_idx - 1];
-				// fill the lpm_multiplier
-				r_m_ic1eq <= ic1eq[v_idx - 1];
-				r_m_v3 <= r_ext_i_data - ic2eq[v_idx - 1]; // to prevent 1 cycle delay
+				v1[v_idx - 1] <= (mR_0 >>> 31) + (mR_1 >>> 31);
+				v2[v_idx - 1] <= ic2eq[v_idx - 1] + (mR_2 >>> 31) + (mR_3 >>> 31);
 			end
 
-			// third cycle -> obtain multiplication results
+			// third cycle -> last steps and output result
 			if (v_idx == 0) begin
-				v1[NBANKS - 2] <= (mR_0 >>> 31) + (mR_1 >>> 31); // remove scaling factor due to multiplication  (probably need to take a slice out of it, truncates automatically)
-				v2[NBANKS - 2] <= ic2eq[NBANKS - 2] + (mR_2 >>> 31) + (mR_3 >>> 31); // should this be a shift or (TODO: this could probably need a greater width...?)
-			end else if (v_idx == 1) begin
-				v1[NBANKS - 1] <= (mR_0 >>> 31) + (mR_1 >>> 31);
-				v2[NBANKS - 1] <= ic2eq[NBANKS - 1] + (mR_2 >>> 31) + (mR_3 >>> 31);
-			end else begin
-				v1[v_idx - 2] <= (mR_0 >>> 31) + (mR_1 >>> 31);
-				v2[v_idx - 2] <= ic2eq[v_idx - 2] + (mR_2 >>> 31) + (mR_3 >>> 31);
-			end
-
-			// fourth cycle -> last steps and output result
-			if (v_idx == 0) begin
-				ic1eq[NBANKS - 3] <= (v1[NBANKS - 3] <<< 2) - ic1eq[NBANKS - 3];
-				ic2eq[NBANKS - 3] <= (v2[NBANKS - 3] <<< 2) - ic2eq[NBANKS - 3];
-				o_filtered <= {v2[NBANKS - 3][32], v2[NBANKS - 3][31:9]};
-			end else if (v_idx == 1) begin
 				ic1eq[NBANKS - 2] <= (v1[NBANKS - 2] <<< 2) - ic1eq[NBANKS - 2];
 				ic2eq[NBANKS - 2] <= (v2[NBANKS - 2] <<< 2) - ic2eq[NBANKS - 2];
 				o_filtered <= {v2[NBANKS - 2][32], v2[NBANKS - 2][31:9]};		
-			end else if (v_idx == 2) begin
+			end else if (v_idx == 1) begin
 				ic1eq[NBANKS - 1] <= (v1[NBANKS - 1] <<< 2) - ic1eq[NBANKS - 1];
 				ic2eq[NBANKS - 1] <= (v2[NBANKS - 1] <<< 2) - ic2eq[NBANKS - 1];
 				o_filtered <= {v2[NBANKS - 1][32], v2[NBANKS - 1][31:9]};
 			end else begin
-				ic1eq[v_idx - 3] <= (v1[v_idx - 3] <<< 2) - ic1eq[v_idx - 3];
-				ic2eq[v_idx - 3] <= (v2[v_idx - 3] <<< 2) - ic2eq[v_idx - 3];
-				o_filtered <= {v2[v_idx - 3][32], v2[v_idx - 3][31:9]};				
+				ic1eq[v_idx - 2] <= (v1[v_idx - 2] <<< 2) - ic1eq[v_idx - 2];
+				ic2eq[v_idx - 2] <= (v2[v_idx - 2] <<< 2) - ic2eq[v_idx - 2];
+				o_filtered <= {v2[v_idx - 2][32], v2[v_idx - 2][31:9]};				
 			end
 			
 			// move valid value
 			valid[0] <= i_valid;
 			valid[1] <= valid[0];
-			valid[2] <= valid[1];
-			o_valid <= valid[2];
+			o_valid <= valid[1];
 			
 			// move midi value
 			midi[0] <= i_midi;
 			midi[1] <= midi[0];
-			midi[2] <= midi[1];
-			o_midi <= midi[2];
-			
-			r_ext_i_data <= {{3{i_data[23]}}, {i_data[22:0]}, 9'b0};
+			o_midi <= midi[1];
 			
 			if (v_idx == NBANKS - 1)
 				v_idx <= 0;
@@ -199,6 +184,7 @@ module state_variable_filter_iir_p(input clk,
 
 endmodule
 
+// Q2.32 format
 module coefficients_lut(input[6:0] i_midi,
 								output reg signed[34:0] o_a1,
 								output reg signed[34:0] o_a2,
@@ -210,7 +196,7 @@ module coefficients_lut(input[6:0] i_midi,
 		o_a3 = 35'b0;
 	end
 	
-	always @(i_midi) begin
+	always @(i_midi) begin // TODO: Fix Qformat something is not wrong, multiplications and precision is ficked up
 		case (i_midi)
             7'h00 	:	 begin 
                 o_a1 <= 35'b00000000000000000000000000000000000; // must be 0
