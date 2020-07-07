@@ -86,7 +86,6 @@ static void write_device(unsigned int* command)
 }
 
 // This function has to command the FPGA firstly decoding the note into the most important parts
-// TODO: create driver for FPGA with charfile creation and define memory regions from which we can read processed output
 // Commands should be truncated and concatenated into appropriate messages to be sent to the driver, which will then transfer the commands to the char file
 // moreover interrupt should be signalled to start/stop whole pipeline of substractive synthesis
 // should this userspace application obtain this audio via DMA and output it somewhere or should it be done only in driver - which will then supply it to any application that waits for it?
@@ -138,7 +137,6 @@ int main(int argc, char* argv[])
     if (fpga_fd < 0)
         fatal("Could not open the FPGA char file!\n");
 
-    // for now hardcode stuff
     // initialize the sequencer object
     init_seq();
 
