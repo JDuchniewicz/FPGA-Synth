@@ -97,6 +97,9 @@ struct msgdma_data {
 
     wait_queue_head_t rd_complete_wq;
     int rd_in_progress;
+
+    // to be removed?
+    struct class *cl;
 };
 
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)

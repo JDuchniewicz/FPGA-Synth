@@ -56,7 +56,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
     ssize_t read_ret;
     int ret;
 
-    pr_info("Starting a DMA read\n");
+    pr_info("Starting a DMA read, len %d \n", len);
     data = (struct msgdma_data*)f->private_data;
     read_ret = len > DMA_BUF_SIZE ? DMA_BUF_SIZE : len;
     to_read = read_ret;
@@ -65,6 +65,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
     read_addr = data->dma_buf_rd_handle;
     while (to_read > MSGDMA_MAX_TX_LEN)
     {
+        pr_info("Reading bytes to_read: %d read_addr: %x\n", to_read, read_addr);
         dma_snd_push_descr( // check parameter order ( I think read is mixed with write)
             data->msgdma0_reg,
             0,
@@ -74,7 +75,6 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
 
         to_read -= MSGDMA_MAX_TX_LEN;
         read_addr += MSGDMA_MAX_TX_LEN;
-        pr_info("Reading bytes to_read: %d read_addr: %d\n", to_read, read_addr);
     }
     /* Last descriptor sends an IRQ */
     dma_snd_push_descr(
@@ -83,9 +83,9 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
         read_addr, // write to the "read"
         to_read,
         TX_COMPL_IRQ_EN);
-    pr_info("Done reading bytes to_read: %d read_addr: %d\n", to_read, read_addr);
+    pr_info("Done reading bytes read_addr: %x\n", read_addr);
     
-    /* Wait for the transferto complete */
+    /* Wait for the transfer to complete */
     ret = wait_event_interruptible_timeout(
         data->rd_complete_wq,
         !data->rd_in_progress,
@@ -105,6 +105,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
 static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need a char dev? I think a misc device suffices - then some changes have to be made (opening etc?)
 {
     int ret = 0;
+    struct device* dev;
 
     ret = alloc_chrdev_region(&data->dev_id, 0, 1, DEV_NAME);
     if (ret < 0)
@@ -112,12 +113,26 @@ static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need
         pr_err("character device region allocation failed\n");
         goto error;
     }
+    /* Create a class in sysfs to be mounted by udev */
+    if (IS_ERR(data->cl = class_create(THIS_MODULE, "chrdev")))
+    {
+        pr_err("character class creation failed\n");
+        goto chrdev_add_err;
+    }
+    if (IS_ERR(dev = device_create(data->cl, NULL, data->dev_id, NULL, "dma_snd")))
+    {
+        pr_err("character device creation failed\n");
+        class_destroy(data->cl);
+        goto chrdev_add_err;
+    }
     /* Actual registering of the device */
     cdev_init(&data->cdev, &dma_snd_fops);
     ret = cdev_add(&data->cdev, data->dev_id, 1);
     if (ret < 0)
     {
         pr_err("character device initialization failed\n");
+        device_destroy(data->cl, data->dev_id);
+        class_destroy(data->cl);
         goto chrdev_add_err;
     }
 
@@ -131,6 +146,8 @@ error:
 static void dma_snd_unregister_chrdev(struct msgdma_data* data)
 {
     cdev_del(&data->cdev);
+    device_destroy(data->cl, data->dev_id);
+    class_destroy(data->cl);
     unregister_chrdev_region(data->dev_id, 1);
 }
 
