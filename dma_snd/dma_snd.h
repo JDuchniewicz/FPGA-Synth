@@ -10,9 +10,15 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
+#include <linux/time.h>
+#include <linux/jiffies.h>
+#include <sound/core.h>
+#include <sound/control.h>
+#include <sound/pcm.h>
+#include <sound/initval.h>
 #include <asm/io.h>
 
-#define DEV_NAME            "dma-snd"
+#define DEV_NAME            "dma_snd" // later rethink this name (maybe dma_vosc or fpga_vosc)?
 
 #define MSGDMA_MAP_SIZE     0x30
 
@@ -100,7 +106,62 @@ struct msgdma_data {
 
     // to be removed?
     struct class *cl;
+    // special field only for ALSA
+    struct snd_card* card;
 };
+
+/* SND MINIVOSC Data */
+static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX; /* Index 0-MAX */
+static char* id[SNDRV_CARDS] = SNDRV_DEFAULT_STR; /* ID for this card */
+static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0}; /* enable just this one */
+
+#define byte_pos(x) ((x) / HZ)
+#define byte_frac(x) ((x) * HZ)
+
+#define MAX_BUFFER (32 * 48) // TODO: change!
+
+static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything with dma_snd
+    .info = (SNDRV_PCM_INFO_MMAP |
+    SNDRV_PCM_INFO_INTERLEAVED |
+    SNDRV_PCM_INFO_BLOCK_TRANSFER |
+    SNDRV_PCM_INFO_MMAP_VALID),
+    .formats            = SNDRV_PCM_FMTBIT_S24_LE, // for now store as 32-bit values with last byte zeroed out
+    .rates              = SNDRV_PCM_RATE_96000,
+    .rate_min           = SNDRV_PCM_RATE_96000,
+    .rate_max           = SNDRV_PCM_RATE_96000,
+    .channels_min       = 1,
+    .channels_max       = 1, // can be extended to 2?
+    .buffer_bytes_max   = MAX_BUFFER,
+    .periods_bytes_min  = 48,
+    .periods_bytes_max  = 48, // TODO: consult buffer sizes
+    .periods_min        = 1,
+    .periods_max        = 32,
+};
+
+struct dma_snd_device {
+    struct snd_card* card;
+    struct snd_pcm* pcm;
+    const struct dma_snd_pcm_ops* timer_ops;
+    /* just one substream so keep all data in this struct */
+    struct mutex cable_lock;
+    /* PCM parameters */
+    unsigned int pcm_period_size;
+    unsigned int pcm_bps; /* bytes per second */
+    /* flags */
+    unsigned int valid;
+    unsigned int running;
+    unsigned int period_update_pending :1;
+    /* timer stuff */
+    unsigned int irq_pos; /* fractional IRQ position */
+    unsigned int period_size_frac;
+    unsigned long last_jiffies;
+    struct timer_list timer;
+
+    struct snd_pcm_substream* substream;
+    unsigned int pcm_buffer_size;
+    unsigned int buf_pos; /* position in buffer */
+    unsigned int silent_size;
+}
 
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)
 /* Function declarations */
@@ -110,6 +171,41 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
 
 static int dma_snd_probe(struct platform_device* pdev);
 static int dma_snd_remove(struct platform_device* pdev);
+
+/* ALSA functions */
+static int dma_snd_pcm_open(struct snd_pcm_substream* ss);
+static int dma_snd_pcm_close(struct snd_pcm_substream* ss);
+static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params);
+static int dma_snd_hw_free(struct snd_pcm_substream* ss);
+static int dma_snd_prepare(struct snd_pcm_substream* ss);
+static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd);
+static int dma_snd_pcm_dev_free(struct snd_device* device);
+static int dma_snd_pcm_free(struct dma_snd_device* chip);
+static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
+
+/* timer functions */
+static void dma_snd_timer_start(struct dma_snd_device* mydev);
+static void dma_snd_timer_stop(struct dma_snd_device* mydev);
+static void dma_snd_pos_update(struct dma_snd_device* mydev);
+static void dma_snd_timer_function(unsigned long data);
+static void dma_snd_xfer_buf(struct dma_snd_device* mydev, unsigned int count);
+static void dma_snd_fill_capture_buf(struct dma_snd_device* mydev, unsigned int bytes);
+
+static struct snd_pcm_ops dma_snd_pcm_ops = {
+    .open       = dma_snd_pcm_open,
+    .close      = dma_snd_pcm_close,
+    .ioctl      = snd_pcm_lib_ioctl,
+    .hw_params  = dma_snd_hw_params,
+    .hw_free    = dma_snd_hw_free,
+    .prepare    = dma_snd_prepare,
+    .trigger    = dma_snd_pcm_trigger,
+    .pointer    = dma_snd_pcm_pointer,
+};
+
+/* specifies what function is called at snd_card_free - used in snd_device_new */
+static struct snd_device_ops snd_dev_ops = {
+    .dev_free   = dma_snd_pcm_dev_free,
+};
 
 static const struct file_operations dma_snd_fops = {
     .owner      = THIS_MODULE,

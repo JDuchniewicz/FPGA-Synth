@@ -1,6 +1,6 @@
 #include "dma_snd.h"
 
-// utility functions for bitmasks setting
+/* Utility functions */
 static void setbit_reg32(volatile void __iomem* reg, u32 mask)
 {
     u32 val = ioread32(reg);
@@ -34,6 +34,110 @@ static void dma_snd_push_descr(
     iowrite32(ctrl | GO, &reg->desc_ctrl);
 }
 
+/* ALSA functions */
+static int dma_snd_pcm_open(struct snd_pcm_substream* ss)
+{
+    struct dma_snd_device* mydev = ss->private_data;
+    pr_info("%s", __func__);
+    
+    mutex_lock(&mydev->cable_lock);
+
+    ss->runtime->hw = dma_snd_pcm_hw;
+
+    mydev->substream = ss;
+    ss->runtime->private_data = mydev;
+    // TODO: setup positions? probably not!
+
+    // SETUP TIMER here
+    setup_timer(&mydev->timer, dma_snd_timer_function, (unsigned long)mydev);
+
+    mutex_unlock(&mydev->cable_lock);
+    return 0;
+}
+
+static int dma_snd_pcm_close(struct snd_pcm_substream* ss)
+{
+    struct dma_snd_device* mydev = ss->private_data;
+    pr_info("%s", __func__);
+
+    // even though the mutex will be set to null already, lock it
+    mutex_lock(&mydev->cable_lock);
+    ss->private_data = NULL;
+    mutex_unlock(&mydev->cable_lock);
+    return 0;
+}
+
+static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params)
+{
+    pr_info("%s", __func__);
+    return snd_pcm_lib_malloc_pages(ss, params_buffer_bytes(hw_params));
+}
+
+static int dma_snd_hw_free(struct snd_pcm_substream* ss)
+{
+    pr_info("%s", __func__);
+    return snd_pcm_lib_free_pages(ss);
+}
+
+static int dma_snd_prepare(struct snd_pcm_substream* ss)
+{
+
+}
+
+static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd)
+{
+
+}
+
+static int dma_snd_pcm_dev_free(struct snd_device* device)
+{
+
+}
+
+static int dma_snd_pcm_free(struct dma_snd_device* chip)
+{
+
+}
+
+static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
+{
+
+}
+
+
+/* timer functions */
+static void dma_snd_timer_start(struct dma_snd_device* mydev)
+{
+
+}
+
+static void dma_snd_timer_stop(struct dma_snd_device* mydev)
+{
+
+}
+
+static void dma_snd_pos_update(struct dma_snd_device* mydev)
+{
+
+}
+
+static void dma_snd_timer_function(unsigned long data)
+{
+
+}
+
+static void dma_snd_xfer_buf(struct dma_snd_device* mydev, unsigned int count)
+{
+
+}
+
+static void dma_snd_fill_capture_buf(struct dma_snd_device* mydev, unsigned int bytes)
+{
+
+}
+
+
+/* Character file functions */
 static int dma_snd_open(struct inode* node, struct file* f) // This is not needed when it is a misc device
 {
     // TODO: single openness 
@@ -111,19 +215,19 @@ static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need
     if (ret < 0)
     {
         pr_err("character device region allocation failed\n");
-        goto error;
+        goto __error;
     }
     /* Create a class in sysfs to be mounted by udev */
     if (IS_ERR(data->cl = class_create(THIS_MODULE, "chrdev")))
     {
         pr_err("character class creation failed\n");
-        goto chrdev_add_err;
+        goto __chrdev_add_err;
     }
     if (IS_ERR(dev = device_create(data->cl, NULL, data->dev_id, NULL, "dma_snd")))
     {
         pr_err("character device creation failed\n");
         class_destroy(data->cl);
-        goto chrdev_add_err;
+        goto __chrdev_add_err;
     }
     /* Actual registering of the device */
     cdev_init(&data->cdev, &dma_snd_fops);
@@ -133,13 +237,13 @@ static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need
         pr_err("character device initialization failed\n");
         device_destroy(data->cl, data->dev_id);
         class_destroy(data->cl);
-        goto chrdev_add_err;
+        goto __chrdev_add_err;
     }
 
     return 0;
-chrdev_add_err:
+__chrdev_add_err:
     unregister_chrdev_region(data->dev_id, 1);
-error:
+__error:
     return ret;
 }
 
@@ -168,22 +272,74 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     return IRQ_HANDLED;
 }
 
+/* Main functions */
 static int dma_snd_probe(struct platform_device* pdev)
 {
     struct msgdma_data* data;
     struct resource* res;
     struct resource* region;
     struct device* dev;
+
+    struct snd_card* card;
+    struct dma_snd_device* card_dev;
+    int nr_subdevs = 1; // how many capture substreams (by default just 1)
+    struct snd_pcm* pcm;
+    int dev_id = pdev->id;
     int ret = 0;
 
-    pr_info("DMA Probe entered\n");
+    pr_info("DMA_SND Probe entered\n");
+
     dev = &pdev->dev;
+    
+    /* ALSA part */
+    // for now separately allocate dma and alsa stuff, then think about merging it
+    ret = snd_card_new(dev, index[dev_id], id[dev_id], THIS_MODULE, sizeof struct dma_snd_device, &card); // later remove this id stuff? there is special version suffixed with '1' TODO:
+    if (ret < 0)
+        goto __nodev;
+
+    card_dev = card->private_data;
+    card_dev->card = card;
+    // MUST have mutex_init here, else crash on mutex_lock
+    mutex_init(&card_dev->cable_lock);
+
+    pr_info("DMA_SND card_dev %p\n", card_dev);
+
+    ret = snd_device_new(card, SNDRV_DEV_LOWLEVEL, card_dev, &snd_dev_ops);
+    if (ret < 0)
+        goto __nodev;
+    /* 0 playback, 1 capture substreams  */
+    ret = snd_pcm_new(card, card->driver, 0, 0, nr_subdevs, &pcm);
+    if (ret < 0)
+        goto __nodev;
+
+    snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &dma_snd_pcm_ops);
+    pcm->private_data = card_dev; // it should be the dev/card struct (the one containing snd_card* card) -> this will not end up in substream->private_data
+    pcm->info_flags = 0;
+    strcpy(pcm->name, card->shortname);
+
+    // in the minivosc there is a mention of mydev->substream->private_data = card_dev;
+    // which crashes, so they moved handling this to _open
+    ret = snd_pcm_lib_preallocate_pages_for_all(pcm,
+            SNDRV_DMA_TYPE_CONTINUOUS,
+            snd_dma_continuous_data(GFP_KERNEL),
+            MAX_BUFFER, MAX_BUFFER);
+    if (ret < 0)
+        goto __nodev;
+
+    ret = snd_card_register(card);
+    if (ret < 0)
+        goto __nodev;
+
+    /* DMA part */
 
     data = (struct msgdma_data*)devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
     if (data == NULL)
         return -ENOMEM;
 
-    platform_set_drvdata(pdev, (void*)data);
+    // store ALSA soundcard in data
+    data->card = card;
+
+    platform_set_drvdata(pdev, (void*)data); // TODO: for now not binding the pcm_card as driver data? dunno if this is proper?
 
     /* Prepare DMA buffers */
     dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32)); // equal to the data width in IP component
@@ -197,7 +353,7 @@ static int dma_snd_probe(struct platform_device* pdev)
     if (data->dma_buf_rd == NULL)
     {
         ret = -ENOMEM;
-        goto fail;
+        goto __fail;
     }
     
     /* Remap IO region of the device */
@@ -258,7 +414,13 @@ static int dma_snd_probe(struct platform_device* pdev)
     
     pr_info("DMA Probe exit\n");
     return 0;
-fail:
+
+__nodev:
+    pr_info("__nodev reached!!\n");
+    snd_card_free(card); // this will call .dev_free registerd func
+
+__fail:
+    pr_info("__fail reached!!\n");
     dma_snd_remove(pdev);
     return ret;
 }
@@ -267,8 +429,8 @@ static int dma_snd_remove(struct platform_device* pdev)
 {
     struct msgdma_data* data = (struct msgdma_data*)platform_get_drvdata(pdev);
 
+    snd_card_free(data->card);
     dma_snd_unregister_chrdev(data); // TODO: check if a char device will be useful for JACK
-
     dma_free_coherent(
         &pdev->dev,
         DMA_BUF_SIZE,
