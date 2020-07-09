@@ -98,16 +98,42 @@ struct msgdma_data {
 
     struct msgdma_reg* msgdma0_reg; // only DMA this driver supports as we do reads only
     int msgdma0_irq;
-    void* dma_buf_rd;
-    dma_addr_t dma_buf_rd_handle;
+    //void* dma_buf_rd; // TODO: probably not used right now
+    //dma_addr_t dma_buf_rd_handle;
 
     wait_queue_head_t rd_complete_wq;
     int rd_in_progress;
 
     // to be removed?
     struct class *cl;
-    // special field only for ALSA
+
+
+
+    // FOR NOW COPIED FROM snd_pcm_device!! // TODO: rename and clean
     struct snd_card* card;
+    struct snd_pcm* pcm;
+    const struct dma_snd_pcm_ops* timer_ops;
+    /* just one substream so keep all data in this struct */
+    struct mutex cable_lock;
+    /* PCM parameters */
+    unsigned int pcm_period_size;
+    //unsigned int pcm_bps; /* bytes per second */
+    /* flags */
+    unsigned int valid;
+    unsigned int running;
+    unsigned int period_update_pending :1;
+    /* timer stuff */
+    /*
+    unsigned int irq_pos; /* fractional IRQ position 
+    unsigned int period_size_frac;
+    unsigned long last_jiffies;
+    struct timer_list timer;
+   */ 
+
+    struct snd_pcm_substream* substream;
+    unsigned int pcm_buffer_size;
+    unsigned int buf_pos; /* position in buffer */
+    unsigned int silent_size;
 };
 
 /* SND MINIVOSC Data */
@@ -117,8 +143,6 @@ static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0}; /* enable j
 
 #define byte_pos(x) ((x) / HZ)
 #define byte_frac(x) ((x) * HZ)
-
-#define MAX_BUFFER (32 * 48) // TODO: change!
 
 static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything with dma_snd
     .info = (SNDRV_PCM_INFO_MMAP |
@@ -131,11 +155,11 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     .rate_max           = SNDRV_PCM_RATE_96000,
     .channels_min       = 1,
     .channels_max       = 1, // can be extended to 2?
-    .buffer_bytes_max   = MAX_BUFFER,
-    .periods_bytes_min  = 48,
-    .periods_bytes_max  = 48, // TODO: consult buffer sizes
+    .buffer_bytes_max   = DMA_BUF_SIZE,
+    .periods_bytes_min  = 4, // TODO: Check, just one sample per period -> 32 bits 4 bytes
+    .periods_bytes_max  = 4, // TODO: consult buffer sizes
     .periods_min        = 1,
-    .periods_max        = 32,
+    .periods_max        = 262144, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
 
 struct dma_snd_device {
@@ -146,16 +170,18 @@ struct dma_snd_device {
     struct mutex cable_lock;
     /* PCM parameters */
     unsigned int pcm_period_size;
-    unsigned int pcm_bps; /* bytes per second */
+    //unsigned int pcm_bps; /* bytes per second */
     /* flags */
     unsigned int valid;
     unsigned int running;
     unsigned int period_update_pending :1;
     /* timer stuff */
-    unsigned int irq_pos; /* fractional IRQ position */
+    /*
+    unsigned int irq_pos; /* fractional IRQ position 
     unsigned int period_size_frac;
     unsigned long last_jiffies;
     struct timer_list timer;
+   */ 
 
     struct snd_pcm_substream* substream;
     unsigned int pcm_buffer_size;
@@ -167,7 +193,7 @@ struct dma_snd_device {
 /* Function declarations */
 static int dma_snd_open(struct inode* node, struct file* f);
 static int dma_snd_release(struct inode* node, struct file* f);
-static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_t* off);
+//static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_t* off);
 
 static int dma_snd_probe(struct platform_device* pdev);
 static int dma_snd_remove(struct platform_device* pdev);
@@ -180,16 +206,18 @@ static int dma_snd_hw_free(struct snd_pcm_substream* ss);
 static int dma_snd_prepare(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd);
 static int dma_snd_pcm_dev_free(struct snd_device* device);
-static int dma_snd_pcm_free(struct dma_snd_device* chip);
+static int dma_snd_pcm_free(struct mgsdma_data* chip);
 static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 
 /* timer functions */
-static void dma_snd_timer_start(struct dma_snd_device* mydev);
-static void dma_snd_timer_stop(struct dma_snd_device* mydev);
-static void dma_snd_pos_update(struct dma_snd_device* mydev);
+/*
+static void dma_snd_timer_start(struct mgsdma_data* mydev);
+static void dma_snd_timer_stop(struct mgsdma_data* mydev);
+static void dma_snd_pos_update(struct mgsdma_data* mydev);
 static void dma_snd_timer_function(unsigned long data);
-static void dma_snd_xfer_buf(struct dma_snd_device* mydev, unsigned int count);
-static void dma_snd_fill_capture_buf(struct dma_snd_device* mydev, unsigned int bytes);
+static void dma_snd_xfer_buf(struct mgsdma_data* mydev, unsigned int count);
+static void dma_snd_fill_capture_buf(struct mgsdma_data* mydev, unsigned int bytes);
+*/
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
     .open       = dma_snd_pcm_open,
@@ -211,8 +239,9 @@ static const struct file_operations dma_snd_fops = {
     .owner      = THIS_MODULE,
     .open       = dma_snd_open, //we will not need it if DMA is running constantly, fo now leave as is
     .release    = dma_snd_release,
-    .read       = dma_snd_read,
+   // .read       = dma_snd_read,
 };
+
 
 static const struct of_device_id dma_snd_of_match [] = {
     {.compatible = "altr,msgdma-19.1" }, // check if can freely change the name  in DTS // TODO:
