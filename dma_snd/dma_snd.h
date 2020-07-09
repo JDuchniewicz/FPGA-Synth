@@ -26,6 +26,7 @@
 #define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak?
 
 #define TX_TIMEOUT          HZ // 1 second
+#define SAMPLE_TIMEOUT      HZ / 96000
 
 typedef u32 volatile reg_t;
 
@@ -123,12 +124,12 @@ struct msgdma_data {
     unsigned int running;
     unsigned int period_update_pending :1;
     /* timer stuff */
-    /*
-    unsigned int irq_pos; /* fractional IRQ position 
+    
+    unsigned int irq_pos; /* fractional IRQ position */
     unsigned int period_size_frac;
     unsigned long last_jiffies;
     struct timer_list timer;
-   */ 
+    
 
     struct snd_pcm_substream* substream;
     unsigned int pcm_buffer_size;
@@ -137,12 +138,8 @@ struct msgdma_data {
 };
 
 /* SND MINIVOSC Data */
-static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX; /* Index 0-MAX */
-static char* id[SNDRV_CARDS] = SNDRV_DEFAULT_STR; /* ID for this card */
-static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0}; /* enable just this one */
-
 #define byte_pos(x) ((x) / HZ)
-#define byte_frac(x) ((x) * HZ)
+#define frac_pos(x) ((x) * HZ)
 
 static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything with dma_snd
     .info = (SNDRV_PCM_INFO_MMAP |
@@ -151,13 +148,13 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     SNDRV_PCM_INFO_MMAP_VALID),
     .formats            = SNDRV_PCM_FMTBIT_S24_LE, // for now store as 32-bit values with last byte zeroed out
     .rates              = SNDRV_PCM_RATE_96000,
-    .rate_min           = SNDRV_PCM_RATE_96000,
-    .rate_max           = SNDRV_PCM_RATE_96000,
+    .rate_min           = 96000,
+    .rate_max           = 96000,
     .channels_min       = 1,
     .channels_max       = 1, // can be extended to 2?
     .buffer_bytes_max   = DMA_BUF_SIZE,
-    .periods_bytes_min  = 4, // TODO: Check, just one sample per period -> 32 bits 4 bytes
-    .periods_bytes_max  = 4, // TODO: consult buffer sizes
+    .period_bytes_min  = 4, // TODO: Check, just one sample per period -> 32 bits 4 bytes
+    .period_bytes_max  = 4, // TODO: consult buffer sizes
     .periods_min        = 1,
     .periods_max        = 262144, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
@@ -177,7 +174,7 @@ struct dma_snd_device {
     unsigned int period_update_pending :1;
     /* timer stuff */
     /*
-    unsigned int irq_pos; /* fractional IRQ position 
+    unsigned int irq_pos;  fractional IRQ position 
     unsigned int period_size_frac;
     unsigned long last_jiffies;
     struct timer_list timer;
@@ -187,7 +184,7 @@ struct dma_snd_device {
     unsigned int pcm_buffer_size;
     unsigned int buf_pos; /* position in buffer */
     unsigned int silent_size;
-}
+};
 
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)
 /* Function declarations */
@@ -206,17 +203,17 @@ static int dma_snd_hw_free(struct snd_pcm_substream* ss);
 static int dma_snd_prepare(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd);
 static int dma_snd_pcm_dev_free(struct snd_device* device);
-static int dma_snd_pcm_free(struct mgsdma_data* chip);
+static int dma_snd_pcm_free(struct msgdma_data* chip);
 static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 
 /* timer functions */
-/*
-static void dma_snd_timer_start(struct mgsdma_data* mydev);
-static void dma_snd_timer_stop(struct mgsdma_data* mydev);
-static void dma_snd_pos_update(struct mgsdma_data* mydev);
+static void dma_snd_timer_start(struct msgdma_data* mydev);
+static void dma_snd_timer_stop(struct msgdma_data* mydev);
+//static void dma_snd_pos_update(struct msgdma_data* mydev);
 static void dma_snd_timer_function(unsigned long data);
-static void dma_snd_xfer_buf(struct mgsdma_data* mydev, unsigned int count);
-static void dma_snd_fill_capture_buf(struct mgsdma_data* mydev, unsigned int bytes);
+/*
+static void dma_snd_xfer_buf(struct msgdma_data* mydev, unsigned int count);
+static void dma_snd_fill_capture_buf(struct msgdma_data* mydev, unsigned int bytes);
 */
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
