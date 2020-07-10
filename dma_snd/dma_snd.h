@@ -159,33 +159,6 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     .periods_max        = 262144, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
 
-struct dma_snd_device {
-    struct snd_card* card;
-    struct snd_pcm* pcm;
-    const struct dma_snd_pcm_ops* timer_ops;
-    /* just one substream so keep all data in this struct */
-    struct mutex cable_lock;
-    /* PCM parameters */
-    unsigned int pcm_period_size;
-    //unsigned int pcm_bps; /* bytes per second */
-    /* flags */
-    unsigned int valid;
-    unsigned int running;
-    unsigned int period_update_pending :1;
-    /* timer stuff */
-    /*
-    unsigned int irq_pos;  fractional IRQ position 
-    unsigned int period_size_frac;
-    unsigned long last_jiffies;
-    struct timer_list timer;
-   */ 
-
-    struct snd_pcm_substream* substream;
-    unsigned int pcm_buffer_size;
-    unsigned int buf_pos; /* position in buffer */
-    unsigned int silent_size;
-};
-
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)
 /* Function declarations */
 static int dma_snd_open(struct inode* node, struct file* f);

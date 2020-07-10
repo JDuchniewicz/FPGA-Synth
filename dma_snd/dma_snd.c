@@ -288,6 +288,7 @@ static void dma_snd_timer_function(unsigned long data)
     pr_info("Done capturing bytes mydev->buf_pos %x pcm_buffer_addr: %x\n", mydev->buf_pos, pcm_buffer_addr);
     pr_info("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d \n", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
 
+    pr_info("DMA device status %x \n", mydev->msgdma0_reg->csr_status);
     //dma_snd_pos_update(mydev);
     // SET OFF the timer
     dma_snd_timer_start(mydev);
@@ -417,6 +418,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     msgdma0_reg = data->msgdma0_reg;
 
+    pr_info("DMA device status %x \n", msgdma0_reg->csr_status);
   //  pr_info("Interrupt entered!\n");
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
@@ -541,6 +543,7 @@ static int dma_snd_probe(struct platform_device* pdev)
 
     // in the minivosc there is a mention of mydev->substream->private_data = data;
     // which crashes, so they moved handling this to _open
+
     ret = snd_pcm_lib_preallocate_pages_for_all(pcm, // TODO: this has to be changed and made coherent with DMA from the FPGA
             SNDRV_DMA_TYPE_CONTINUOUS,
             snd_dma_continuous_data(GFP_KERNEL),
@@ -549,7 +552,6 @@ static int dma_snd_probe(struct platform_device* pdev)
     pr_info("DMA_SND snd_pcm_lib_preallocate success\n");
     if (ret < 0)
         goto __nodev;
-    // JUST TO BE SURE PRINT OUT WHAT WAS ALLOCATED 
 
     ret = snd_card_register(card);
     if (ret < 0)
