@@ -29,10 +29,14 @@ static void sighandler(int sig)
 int main(int argc, char* argv[])
 {
     int* buffer = NULL; // a buffer of 32 bit values
+    FILE* destination;
     ssize_t bytes;
     dma_snd_fd = open("/dev/dma_snd", O_RDONLY);
+    destination = fopen("/root/tempfile", "w");
+    if (!destination)
+        fatal("Could not open the destination file! errno: %d", errno);
     if (dma_snd_fd < 0)
-        fatal("Could not open the DMA_SND char file, errno: %d!\n", errno);
+        fatal("Could not open the DMA_SND char file, errno: %d!", errno);
 
     signal(SIGINT, sighandler);
     signal(SIGSTOP, sighandler);
@@ -41,12 +45,12 @@ int main(int argc, char* argv[])
     for (;;)
     {
         bytes = read(dma_snd_fd, buffer, BUFFER_SIZE);
-        printf("Reading %d bytes\n", bytes);
+        //printf("Reading %d bytes\n", bytes);
         if (bytes < 0)
         {
             free(buffer);
             close(dma_snd_fd);
-            fatal("Could not read from the file, errno: %d!\n", errno);
+            fatal("Could not read from the file, errno: %d!", errno);
         }
         if (bytes == 0)
         {
@@ -54,10 +58,14 @@ int main(int argc, char* argv[])
             close(dma_snd_fd);
             fatal("DMA buffer is now empty\n");
         }
+        fwrite(buffer, sizeof(int), bytes, destination);
+
+        /*
         for (int i = 0; i < bytes; ++i)
         {
             printf("%d | %x \t", i, *(buffer + i));
         }
+        */
         printf("\n\n");
 
         if (stop)
