@@ -38,7 +38,7 @@ static void dma_snd_push_descr(
 static int dma_snd_pcm_open(struct snd_pcm_substream* ss)
 {
     struct msgdma_data* mydev = ss->private_data;
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     
     mutex_lock(&mydev->cable_lock);
 
@@ -57,7 +57,7 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* ss)
 static int dma_snd_pcm_close(struct snd_pcm_substream* ss)
 {
     struct msgdma_data* mydev = ss->private_data;
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
 
     // even though the mutex will be set to null already, lock it
     mutex_lock(&mydev->cable_lock);
@@ -68,13 +68,13 @@ static int dma_snd_pcm_close(struct snd_pcm_substream* ss)
 
 static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params)
 {
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     return snd_pcm_lib_malloc_pages(ss, params_buffer_bytes(hw_params));
 }
 
 static int dma_snd_hw_free(struct snd_pcm_substream* ss)
 {
-    pr_info("%s", __func__);
+    dbg("%s", __func__);
     return snd_pcm_lib_free_pages(ss);
 }
 
@@ -83,7 +83,7 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
     struct snd_pcm_runtime* runtime = ss->runtime;
     struct msgdma_data* mydev = runtime->private_data;
     //unsigned int bps;
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
 
 /*
     bps = runtime->rate * runtime->channels; // params requested by user app (arecord, audacity)
@@ -95,15 +95,17 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
 
     mydev->buf_pos = 0;
     mydev->pcm_buffer_size = frames_to_bytes(runtime, runtime->buffer_size);
-    pr_info("    runtime->buffer_size: %lu; mydev->pcm_buffer_size: %u\n",runtime->buffer_size, mydev->pcm_buffer_size);
-    pr_info("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d \n", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
+    dbg("    runtime->buffer_size: %lu; mydev->pcm_buffer_size: %u",runtime->buffer_size, mydev->pcm_buffer_size);
+    dbg("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d ", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
+    /*
     if (ss->stream == SNDRV_PCM_STREAM_CAPTURE) // TODO: does this memory have to be prepared at all?
     {
-        /* clear capture buffer */
+        // clear capture buffer 
         mydev->silent_size = mydev->pcm_buffer_size;
         // mark prepared buffer as 45 -> '_'
         memset(runtime->dma_area, 45, mydev->pcm_buffer_size);
     }
+    */
 
 /*
     if (!mydev->running)
@@ -113,8 +115,8 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
     }
 */
 
-    pr_info("This substream max DMA buffer size %d max DMA size %d DMA address %x Other max size parameter %d \n", ss->buffer_bytes_max, ss->dma_max, ss->dma_buffer.addr, ss->dma_buffer.bytes);
-    //pr_info("   Allocated DMA buffer at addr %d with size %d\n", ss->dma_buffer.addr, mydev->pcm->streams[0].substream->dma_buffer.bytes);
+    dbg("This substream max DMA buffer size %d max DMA size %d DMA address %x Other max size parameter %d ", ss->buffer_bytes_max, ss->dma_max, ss->dma_buffer.addr, ss->dma_buffer.bytes);
+    //dbg("   Allocated DMA buffer at addr %d with size %d", ss->dma_buffer.addr, mydev->pcm->streams[0].substream->dma_buffer.bytes);
     mutex_lock(&mydev->cable_lock);
     if (!(mydev->valid & ~(1 << ss->stream))) // if not valid yet (i.e. not yet _prepare'd)
     {
@@ -125,7 +127,7 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
     mydev->valid |= 1 << ss->stream;
     mutex_unlock(&mydev->cable_lock);
 
-    pr_info("   pcm_period_size: %u; period_size_frac: %u\n", mydev->pcm_period_size, mydev->period_size_frac);
+    dbg("   pcm_period_size: %u; period_size_frac: %u", mydev->pcm_period_size, mydev->period_size_frac);
     return 0;
 }
 
@@ -134,7 +136,7 @@ static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd)
     int ret = 0;
     // do not get mydev from ss->runtime->private_data but from
     struct msgdma_data* mydev = ss->private_data;
-    pr_info("%s - trigger %d\n", __func__, cmd);
+    dbg("%s - trigger %d", __func__, cmd);
 
     switch (cmd)
     {
@@ -177,13 +179,13 @@ static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd)
 // These functions would do any special freeing on snd_card_free, however no need to do anything since no special allocations made
 static int dma_snd_pcm_dev_free(struct snd_device* device)
 {
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     return dma_snd_pcm_free(device->device_data);
 }
 
 static int dma_snd_pcm_free(struct msgdma_data* chip)
 {
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     return 0;
 }
 
@@ -191,9 +193,9 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 {
     struct snd_pcm_runtime* runtime = ss->runtime;
     struct msgdma_data* mydev = runtime->private_data;
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     //dma_snd_pos_update(mydev); // TODO: should I update anything? probably not, just return the byte received
-   // pr_info("   bytes_to_frames(: %lu, mydev->buf_pos: %d\n", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
+   // dbg("   bytes_to_frames(: %lu, mydev->buf_pos: %d", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
     return bytes_to_frames(runtime, mydev->buf_pos);
 }
 
@@ -202,7 +204,7 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 static void dma_snd_timer_start(struct msgdma_data* mydev)
 {
     /*
-    pr_info("   %s: mydev->period_size_frac: %u; mydev->irq_pos: %u jiffies: %lu pcm_bps %u\n",mydev->period_size_frac, mydev->irq_pos, mydev->pcm_bps);
+    dbg("   %s: mydev->period_size_frac: %u; mydev->irq_pos: %u jiffies: %lu pcm_bps %u",mydev->period_size_frac, mydev->irq_pos, mydev->pcm_bps);
     tick = mydev->period_size_frac - mydev->irq_pos; // how far are we in the current period of the waveform
     tick = (tick + mydev->pcm_bps - 1) / mydev->pcm_bps; // + pcm_bps to prevent negative value overflow
     */
@@ -213,7 +215,7 @@ static void dma_snd_timer_start(struct msgdma_data* mydev)
 
 static void dma_snd_timer_stop(struct msgdma_data* mydev)
 {
-    pr_info("%s\n", __func__);
+    dbg("%s", __func__);
     del_timer(&mydev->timer);
 }
 
@@ -227,9 +229,9 @@ static void dma_snd_pos_update(struct msgdma_data* mydev)
     if (!mydev->running)
         return;
 
-    pr_info("%s: running\n", __func__);
+    dbg("%s: running", __func__);
     delta = jiffies - mydev->last_jiffies;
-    pr_info("   jiffies %lu, ->last_jiffies %lu, delta %lu\n", jiffies, mydev->last_jiffies, delta);
+    dbg("   jiffies %lu, ->last_jiffies %lu, delta %lu", jiffies, mydev->last_jiffies, delta);
 
     if (!delta)
         return;
@@ -239,7 +241,7 @@ static void dma_snd_pos_update(struct msgdma_data* mydev)
     last_pos = byte_pos(mydev->irq_pos);
     mydev->irq_pos += delta * mydev->pcm_bps;
     count = byte_pos(mydev->irq_pos) - last_pos;
-    pr_info("   last_pos %d, ->irq_pos %d, count %d\n", last_pos, mydev->irq_pos, count);
+    dbg("   last_pos %d, ->irq_pos %d, count %d", last_pos, mydev->irq_pos, count);
 
     if (!count)
         return;
@@ -249,7 +251,7 @@ static void dma_snd_pos_update(struct msgdma_data* mydev)
 
     if (mydev->irq_pos >= mydev->period_size_frac)
     {
-        pr_info("   mydev->irq_pos >= mydev->period_size_frac %d\n", mydev->period_size_frac);
+        dbg("   mydev->irq_pos >= mydev->period_size_frac %d", mydev->period_size_frac);
         mydev->irq_pos %= mydev->period_size_frac;
         mydev->period_update_pending = 1;
     }
@@ -271,9 +273,9 @@ static void dma_snd_timer_function(unsigned long data)
         return;
 
     pcm_buffer_addr = mydev->substream->dma_buffer.addr;
-  //  pr_info("%s: running\n", __func__);
+  //  dbg("%s: running", __func__);
     // perform a transaction submit descriptors!
-    pr_info("Last data in buffer at address (dma_buffer.area + dma_buffer.addr) %x | %x\n", mydev->substream->dma_buffer.area+ pcm_buffer_addr, *(mydev->substream->dma_buffer.area+ pcm_buffer_addr));
+    dbg("Last data in buffer at address (dma_buffer.area + dma_buffer.addr) %x | %x", mydev->substream->dma_buffer.area+ pcm_buffer_addr, *(mydev->substream->dma_buffer.area+ pcm_buffer_addr));
 
     dma_snd_push_descr(
         mydev->msgdma0_reg,
@@ -284,11 +286,11 @@ static void dma_snd_timer_function(unsigned long data)
     mydev->buf_pos += 4;
     pcm_buffer_addr = mydev->substream->dma_buffer.addr += 4;
     
-    //pr_info("DMA buffer area %x\n", mydev->substream->dma_buffer.area);
-    pr_info("Done capturing bytes mydev->buf_pos %x pcm_buffer_addr: %x\n", mydev->buf_pos, pcm_buffer_addr);
-    pr_info("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d \n", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
+    //dbg("DMA buffer area %x", mydev->substream->dma_buffer.area);
+    dbg("Done capturing bytes mydev->buf_pos %x pcm_buffer_addr: %x", mydev->buf_pos, pcm_buffer_addr);
+    dbg("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d ", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
 
-    pr_info("DMA device status %x \n", mydev->msgdma0_reg->csr_status);
+    dbg("DMA device status fillbuf %x ", mydev->msgdma0_reg->csr_status);
     //dma_snd_pos_update(mydev);
     // SET OFF the timer
     dma_snd_timer_start(mydev);
@@ -300,7 +302,7 @@ static void dma_snd_timer_function(unsigned long data)
 
         if (mydev->running)
         {
-            pr_info("   : calling snd_pcm_period_elapsed\n");
+            dbg("   : calling snd_pcm_period_elapsed");
             snd_pcm_period_elapsed(mydev->substream);
         }
     }
@@ -310,7 +312,7 @@ static void dma_snd_timer_function(unsigned long data)
 /*
 static void dma_snd_xfer_buf(struct msgdma_data* mydev, unsigned int count)
 {
-    pr_info("%s: count: %d\n", __func__, count);
+    dbg("%s: count: %d", __func__, count);
 
     switch (mydev->running)
     {
@@ -325,7 +327,7 @@ static void dma_snd_xfer_buf(struct msgdma_data* mydev, unsigned int count)
         // handle the (auto)increase of buf_pos
         mydev->buf_pos += count;
         mydev->buf_pos %= mydev->pcm_buffer_size;
-        pr_info("   mydev->buf_pos %d\n", mydev->buf_pos);
+        dbg("   mydev->buf_pos %d", mydev->buf_pos);
     }
 }
 
@@ -361,7 +363,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
     ssize_t read_ret;
     int ret;
 
-    pr_info("Starting a DMA read, len %d \n", len);
+    dbg("Starting a DMA read, len %d ", len);
     data = (struct msgdma_data*)f->private_data;
     read_ret = len > DMA_BUF_SIZE ? DMA_BUF_SIZE : len;
     to_read = read_ret;
@@ -370,7 +372,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
     read_addr = data->dma_buf_rd_handle;
     while (to_read > MSGDMA_MAX_TX_LEN)
     {
-        pr_info("Reading bytes to_read: %d read_addr: %x\n", to_read, read_addr);
+        dbg("Reading bytes to_read: %d read_addr: %x", to_read, read_addr);
         dma_snd_push_descr( // check parameter order ( I think read is mixed with write)
             data->msgdma0_reg,
             0,re
@@ -387,7 +389,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
         read_addr, // write to the "read"
         to_read,
         TX_COMPL_IRQ_EN);
-    pr_info("Done reading bytes read_addr: %x\n", read_addr);
+    dbg("Done reading bytes read_addr: %x", read_addr);
     
      //Wait for the transfer to complete 
     ret = wait_event_interruptible_timeout(
@@ -399,7 +401,7 @@ static ssize_t dma_snd_read(struct file* f, char __user* ubuf, size_t len, loff_
         return -ERESTARTSYS;
     if (ret == 0) // a timeout
         return -EIO;mydev->pcm->streams[0].substream->dma_buffer 
-    pr_info("Finished a DMA read\n");
+    dbg("Finished a DMA read");
     return read_ret;
 }
 */
@@ -418,8 +420,8 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     msgdma0_reg = data->msgdma0_reg;
 
-    pr_info("DMA device status %x \n", msgdma0_reg->csr_status);
-  //  pr_info("Interrupt entered!\n");
+    dbg("DMA device status interrupt %x ", msgdma0_reg->csr_status);
+  //  dbg("Interrupt entered!");
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
@@ -428,13 +430,13 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
         if (!data->running)
             goto __eexit;
 
-   //     pr_info("Interrupt ackonwledged!\n");
+   //     dbg("Interrupt ackonwledged!");
         snd_pcm_period_elapsed(data->substream);
         //data->rd_in_progress = 0; // this will wake up the read function waiting on the queue
         //wake_up_interruptible(&data->rd_complete_wq);
     }
 
-//    pr_info("Interrupt end!\n");
+//    dbg("Interrupt end!");
 __eexit:
     return IRQ_HANDLED;
 }
@@ -447,18 +449,18 @@ static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need
     ret = alloc_chrdev_region(&data->dev_id, 0, 1, DEV_NAME);
     if (ret < 0)
     {
-        pr_err("character device region allocation failed\n");
+        pr_err("character device region allocation failed");
         goto __error;
     }
     // Create a class in sysfs to be mounted by udev
     if (IS_ERR(data->cl = class_create(THIS_MODULE, "chrdev")))
     {
-        pr_err("character class creation failed\n");
+        pr_err("character class creation failed");
         goto __chrdev_add_err;
     }
     if (IS_ERR(dev = device_create(data->cl, NULL, data->dev_id, NULL, "dma_snd")))
     {
-        pr_err("character device creation failed\n");
+        pr_err("character device creation failed");
         class_destroy(data->cl);
         goto __chrdev_add_err;
     }
@@ -467,7 +469,7 @@ static int dma_snd_register_chrdev(struct msgdma_data* data) // TODO: do we need
     ret = cdev_add(&data->cdev, data->dev_id, 1);
     if (ret < 0)
     {
-        pr_err("character device initialization failed\n");
+        pr_err("character device initialization failed");
         device_destroy(data->cl, data->dev_id);
         class_destroy(data->cl);
         goto __chrdev_add_err;
@@ -502,7 +504,7 @@ static int dma_snd_probe(struct platform_device* pdev)
     //int dev_id = pdev->id;
     int ret = 0;
 
-    pr_info("DMA_SND Probe entered\n");
+    dbg("DMA_SND Probe entered");
 
     dev = &pdev->dev;
     
@@ -517,13 +519,13 @@ static int dma_snd_probe(struct platform_device* pdev)
     // MUST have mutex_init here, else crash on mutex_lock
     mutex_init(&data->cable_lock);
 
-    pr_info("DMA_SND data %p dev_id %d\n", data, pdev->id);
+    dbg("DMA_SND data %p dev_id %d", data, pdev->id);
 
     strcpy(card->driver, "dma_snd_driver");
     sprintf(card->shortname, "FPGA Synthesizer %s", DEV_NAME);
     strcpy(card->longname, card->shortname);
 
-    pr_info("DMA_SND card names copying success\n");
+    dbg("DMA_SND card names copying success");
     ret = snd_device_new(card, SNDRV_DEV_LOWLEVEL, data, &snd_dev_ops);
     if (ret < 0)
         goto __nodev;
@@ -536,7 +538,7 @@ static int dma_snd_probe(struct platform_device* pdev)
     pcm->private_data = data; // it should be the dev/card struct (the one containing snd_card* card) -> this will not end up in substream->private_data
     pcm->info_flags = 0;
     strcpy(pcm->name, card->shortname);
-    pr_info("DMA_SND snd_pcm_set_ops success\n");
+    dbg("DMA_SND snd_pcm_set_ops success");
 
     /* Prepare DMA buffers */
    // dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32)); // equal to the data width in IP component
@@ -549,7 +551,7 @@ static int dma_snd_probe(struct platform_device* pdev)
             snd_dma_continuous_data(GFP_KERNEL),
             DMA_BUF_SIZE, DMA_BUF_SIZE);
 
-    pr_info("DMA_SND snd_pcm_lib_preallocate success\n");
+    dbg("DMA_SND snd_pcm_lib_preallocate success");
     if (ret < 0)
         goto __nodev;
 
@@ -632,16 +634,16 @@ static int dma_snd_probe(struct platform_device* pdev)
     if (ret < 0)
         return ret;
     
-    pr_info("DMA Probe exit\n");
+    dbg("DMA Probe exit");
     return 0;
 
 
 __nodev:
-    pr_info("__nodev reached!!\n");
+    dbg("__nodev reached!!");
     snd_card_free(card); // this will call .dev_free registerd func
 
 //__fail:
-    pr_info("__fail reached!!\n");
+    dbg("__fail reached!!");
     dma_snd_remove(pdev);
     return ret;
 }

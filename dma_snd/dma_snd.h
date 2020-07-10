@@ -28,6 +28,10 @@
 #define TX_TIMEOUT          HZ // 1 second
 #define SAMPLE_TIMEOUT      HZ / 96000
 
+static int debug = 1;
+#undef dbg
+#define dbg(format, arg...) do { if (debug) pr_info(": " format "\n", ##arg); } while (0)
+
 typedef u32 volatile reg_t;
 
 #pragma pack(1)
