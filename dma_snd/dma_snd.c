@@ -95,13 +95,13 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
 
     mydev->buf_pos = 0;
     mydev->pcm_buffer_size = frames_to_bytes(runtime, runtime->buffer_size);
-    //pr_info("   bps: %u, runtime->buffer_size: %lu; mydev->pcm_buffer_size: %u\n", bps, runtime->buffer_size, mydev->pcm_buffer_size);
+    pr_info("    runtime->buffer_size: %lu; mydev->pcm_buffer_size: %u\n",runtime->buffer_size, mydev->pcm_buffer_size);
+    pr_info("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d \n", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
     if (ss->stream == SNDRV_PCM_STREAM_CAPTURE) // TODO: does this memory have to be prepared at all?
     {
         /* clear capture buffer */
         mydev->silent_size = mydev->pcm_buffer_size;
-        // somehow setting to char 45 is correct-> this is charland
-        // mark prepared buffer as 45
+        // mark prepared buffer as 45 -> '_'
         memset(runtime->dma_area, 45, mydev->pcm_buffer_size);
     }
 
@@ -113,7 +113,7 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
     }
 */
 
-    pr_info("This substream max DMA buffer size %d max DMA size %d DMA address %d Other max size parameter %d \n", ss->buffer_bytes_max, ss->dma_max, ss->dma_buffer.addr, ss->dma_buffer.bytes);
+    pr_info("This substream max DMA buffer size %d max DMA size %d DMA address %x Other max size parameter %d \n", ss->buffer_bytes_max, ss->dma_max, ss->dma_buffer.addr, ss->dma_buffer.bytes);
     //pr_info("   Allocated DMA buffer at addr %d with size %d\n", ss->dma_buffer.addr, mydev->pcm->streams[0].substream->dma_buffer.bytes);
     mutex_lock(&mydev->cable_lock);
     if (!(mydev->valid & ~(1 << ss->stream))) // if not valid yet (i.e. not yet _prepare'd)
@@ -191,9 +191,9 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 {
     struct snd_pcm_runtime* runtime = ss->runtime;
     struct msgdma_data* mydev = runtime->private_data;
-    //pr_info("%s\n", __func__);
+    pr_info("%s\n", __func__);
     //dma_snd_pos_update(mydev); // TODO: should I update anything? probably not, just return the byte received
-    //pr_info("   bytes_to_frames(: %lu, mydev->buf_pos: %d\n", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
+   // pr_info("   bytes_to_frames(: %lu, mydev->buf_pos: %d\n", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
     return bytes_to_frames(runtime, mydev->buf_pos);
 }
 
@@ -264,6 +264,7 @@ static void dma_snd_pos_update(struct msgdma_data* mydev)
 static void dma_snd_timer_function(unsigned long data)
 {
     struct msgdma_data* mydev = (struct msgdma_data*)data;
+    struct snd_pcm_runtime* runtime = mydev->substream->runtime; // added
     dma_addr_t pcm_buffer_addr;
 
     if (!mydev->running)
@@ -272,18 +273,20 @@ static void dma_snd_timer_function(unsigned long data)
     pcm_buffer_addr = mydev->substream->dma_buffer.addr;
   //  pr_info("%s: running\n", __func__);
     // perform a transaction submit descriptors!
+    pr_info("Last data in buffer at address (dma_buffer.area + dma_buffer.addr) %x | %x\n", mydev->substream->dma_buffer.area+ pcm_buffer_addr, *(mydev->substream->dma_buffer.area+ pcm_buffer_addr));
 
     dma_snd_push_descr(
         mydev->msgdma0_reg,
         0,
-        pcm_buffer_addr,
+        (mydev->substream->dma_buffer.area + pcm_buffer_addr),
         4,
         TX_COMPL_IRQ_EN);
     mydev->buf_pos += 4;
     pcm_buffer_addr = mydev->substream->dma_buffer.addr += 4;
     
-  //  pr_info("Done capturing bytes pcm_buffer_addr: %x\n", pcm_buffer_addr);
-
+    //pr_info("DMA buffer area %x\n", mydev->substream->dma_buffer.area);
+    pr_info("Done capturing bytes mydev->buf_pos %x pcm_buffer_addr: %x\n", mydev->buf_pos, pcm_buffer_addr);
+    pr_info("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d \n", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
 
     //dma_snd_pos_update(mydev);
     // SET OFF the timer
