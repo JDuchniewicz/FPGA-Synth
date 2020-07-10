@@ -161,6 +161,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
+        pr_info("DMA device status %u\n", msgdma0_reg->csr_status);
     //    pr_info("Interrupt IRQ flag set!\n");
         setbit_reg32(&msgdma0_reg->csr_status, IRQ);
         data->rd_in_progress = 0; // this will wake up the read function waiting on the queue
