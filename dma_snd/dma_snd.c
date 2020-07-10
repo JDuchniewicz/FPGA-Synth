@@ -46,7 +46,6 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* ss)
 
     mydev->substream = ss;
     ss->runtime->private_data = mydev;
-    // TODO: setup positions in buffers - original driver had a dummy buffer, I am using real one? probably not!
 
     // SETUP TIMER here
     setup_timer(&mydev->timer, dma_snd_timer_function, (unsigned long)mydev);
@@ -192,9 +191,9 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 {
     struct snd_pcm_runtime* runtime = ss->runtime;
     struct msgdma_data* mydev = runtime->private_data;
-    pr_info("%s\n", __func__);
+    //pr_info("%s\n", __func__);
     //dma_snd_pos_update(mydev); // TODO: should I update anything? probably not, just return the byte received
-    pr_info("   bytes_to_frames(: %lu, mydev->buf_pos: %d\n", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
+    //pr_info("   bytes_to_frames(: %lu, mydev->buf_pos: %d\n", bytes_to_frames(runtime, mydev->buf_pos),mydev->buf_pos);
     return bytes_to_frames(runtime, mydev->buf_pos);
 }
 
@@ -271,7 +270,7 @@ static void dma_snd_timer_function(unsigned long data)
         return;
 
     pcm_buffer_addr = mydev->substream->dma_buffer.addr;
-    pr_info("%s: running\n", __func__);
+  //  pr_info("%s: running\n", __func__);
     // perform a transaction submit descriptors!
 
     dma_snd_push_descr(
@@ -283,7 +282,7 @@ static void dma_snd_timer_function(unsigned long data)
     mydev->buf_pos += 4;
     pcm_buffer_addr = mydev->substream->dma_buffer.addr += 4;
     
-    pr_info("Done capturing bytes pcm_buffer_addr: %x\n", pcm_buffer_addr);
+  //  pr_info("Done capturing bytes pcm_buffer_addr: %x\n", pcm_buffer_addr);
 
 
     //dma_snd_pos_update(mydev);
@@ -415,7 +414,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     msgdma0_reg = data->msgdma0_reg;
 
-    pr_info("Interrupt entered!\n");
+  //  pr_info("Interrupt entered!\n");
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
@@ -424,13 +423,13 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
         if (!data->running)
             goto __eexit;
 
-        pr_info("Interrupt ackonwledged!\n");
+   //     pr_info("Interrupt ackonwledged!\n");
         snd_pcm_period_elapsed(data->substream);
         //data->rd_in_progress = 0; // this will wake up the read function waiting on the queue
         //wake_up_interruptible(&data->rd_complete_wq);
     }
 
-    pr_info("Interrupt end!\n");
+//    pr_info("Interrupt end!\n");
 __eexit:
     return IRQ_HANDLED;
 }
