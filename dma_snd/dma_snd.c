@@ -157,17 +157,17 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     msgdma0_reg = data->msgdma0_reg;
 
-    pr_info("Inside interrupt!\n");
+   // pr_info("Inside interrupt!\n");
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
-        pr_info("Interrupt IRQ flag set!\n");
+    //    pr_info("Interrupt IRQ flag set!\n");
         setbit_reg32(&msgdma0_reg->csr_status, IRQ);
         data->rd_in_progress = 0; // this will wake up the read function waiting on the queue
         wake_up_interruptible(&data->rd_complete_wq);
     }
 
-    pr_info("Interrupt exit\n");
+    //pr_info("Interrupt exit\n");
     return IRQ_HANDLED;
 }
 
@@ -260,15 +260,6 @@ static int dma_snd_probe(struct platform_device* pdev)
         return ret;
     
     pr_info("DMA Probe exit\n");
-
-    pr_info("Trying to enable a GO descriptor\n");
-    dma_snd_push_descr(
-        data->msgdma0_reg,
-        0,
-        0,
-        0,
-        TX_COMPL_IRQ_EN
-    );
     return 0;
 fail:
     dma_snd_remove(pdev);
