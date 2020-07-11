@@ -23,10 +23,14 @@
 #define MSGDMA_MAP_SIZE     0x30
 
 #define MSGDMA_MAX_TX_LEN   (1 << 10) // 1 KB
-#define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak?
+#define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak to 4MB?
 
 #define TX_TIMEOUT          HZ // 1 second
-#define SAMPLE_TIMEOUT      HZ / 375
+#define SAMPLE_TIMEOUT      HZ / 93 // sample 0.75 second faster -> find integer multiples
+
+#define MAX_BUFFERS         8
+#define MAX_PERIODS         MAX_BUFFERS
+#define BUFFER_SAMPLES       1024 // TODO: all to tweak, for now for a skeleton
 
 static int debug = 1;
 #undef dbg
@@ -101,10 +105,10 @@ struct msgdma_data {
     dev_t dev_id;
     struct cdev cdev;
 
-    struct msgdma_reg* msgdma0_reg; // only DMA this driver supports as we do reads only
+    struct msgdma_reg* msgdma0_reg;
     int msgdma0_irq;
-    //void* dma_buf_rd; // TODO: probably not used right now
-    //dma_addr_t dma_buf_rd_handle;
+    void* dma_buf_rd;
+    dma_addr_t dma_buf_rd_handle;
 
     wait_queue_head_t rd_complete_wq;
     int rd_in_progress;
@@ -120,25 +124,17 @@ struct msgdma_data {
     const struct dma_snd_pcm_ops* timer_ops;
     /* just one substream so keep all data in this struct */
     struct mutex cable_lock;
-    /* PCM parameters */
-    unsigned int pcm_period_size;
-    //unsigned int pcm_bps; /* bytes per second */
     /* flags */
     unsigned int valid;
     unsigned int running;
     unsigned int period_update_pending :1;
     /* timer stuff */
-    
-    unsigned int irq_pos; /* fractional IRQ position */
-    unsigned int period_size_frac;
+    unsigned int period_size;
     unsigned long last_jiffies;
     struct timer_list timer;
-    
 
-    struct snd_pcm_substream* substream;
-    unsigned int pcm_buffer_size;
+    struct snd_pcm_substream* substream; // do not make use of the runtime pointer, instead set all data by myself
     unsigned int buf_pos; /* position in buffer */
-    unsigned int silent_size;
 };
 
 /* SND MINIVOSC Data */
@@ -157,10 +153,10 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     .channels_min       = 1,
     .channels_max       = 1, // can be extended to 2?
     .buffer_bytes_max   = DMA_BUF_SIZE,
-    .period_bytes_min  = 4, // TODO: Check, just one sample per period -> 32 bits 4 bytes
-    .period_bytes_max  = 4, // TODO: consult buffer sizes
-    .periods_min        = 1,
-    .periods_max        = 262144, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
+    .period_bytes_min  = 4 * BUFFER_SAMPLES, 
+    .period_bytes_max  = 4 * BUFFER_SAMPLES, // TODO: consult buffer sizes
+    .periods_min        = MAX_PERIODS, // TODO: this triggers how often a PCM interrupt is triggered, to tweak!!!!!
+    .periods_max        = MAX_PERIODS, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
 
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)
@@ -176,7 +172,7 @@ static int dma_snd_remove(struct platform_device* pdev);
 static int dma_snd_pcm_open(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_close(struct snd_pcm_substream* ss);
 static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params);
-static int dma_snd_hw_free(struct snd_pcm_substream* ss);
+//static int dma_snd_hw_free(struct snd_pcm_substream* ss);
 static int dma_snd_prepare(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd);
 static int dma_snd_pcm_dev_free(struct snd_device* device);
@@ -198,7 +194,7 @@ static struct snd_pcm_ops dma_snd_pcm_ops = {
     .close      = dma_snd_pcm_close,
     .ioctl      = snd_pcm_lib_ioctl,
     .hw_params  = dma_snd_hw_params,
-    .hw_free    = dma_snd_hw_free,
+    //.hw_free    = dma_snd_hw_free,
     .prepare    = dma_snd_prepare,
     .trigger    = dma_snd_pcm_trigger,
     .pointer    = dma_snd_pcm_pointer,
