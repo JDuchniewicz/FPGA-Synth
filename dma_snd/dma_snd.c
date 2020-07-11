@@ -427,6 +427,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
         setbit_reg32(&msgdma0_reg->csr_status, IRQ);
+       // dbg("INTERRUPT the data should be here!!! dma_buffer.area + dma_buffer.addr) %x | %x", data->substream->dma_buffer.area + data->substream->dma_buffer.addr, *(data->substream->dma_buffer.area + data->substream->dma_buffer.addr));
         // TODO: decide whether acknowledge the IRQ or ignore it if the device is not capturing?
         if (!data->running)
             goto __eexit;
