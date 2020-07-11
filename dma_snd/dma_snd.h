@@ -26,7 +26,7 @@
 #define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak?
 
 #define TX_TIMEOUT          HZ // 1 second
-#define SAMPLE_TIMEOUT      HZ / 96000
+#define SAMPLE_TIMEOUT      HZ / 375
 
 static int debug = 1;
 #undef dbg

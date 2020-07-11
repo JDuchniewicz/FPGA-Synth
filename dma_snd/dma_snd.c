@@ -97,7 +97,8 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
     mydev->pcm_buffer_size = frames_to_bytes(runtime, runtime->buffer_size);
     dbg("    runtime->buffer_size: %lu; mydev->pcm_buffer_size: %u",runtime->buffer_size, mydev->pcm_buffer_size);
     dbg("   runtime->dma_area %x runtime->dma_addr %x runtime->dma_size %d ", runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
-    /*
+    dbg("   mydev->ss->dma_buffer.area %x mydev->ss->dma_buffer.addr %x", mydev->substream->dma_buffer.area, mydev->substream->dma_buffer.addr);
+    
     if (ss->stream == SNDRV_PCM_STREAM_CAPTURE) // TODO: does this memory have to be prepared at all?
     {
         // clear capture buffer 
@@ -105,7 +106,7 @@ static int dma_snd_prepare(struct snd_pcm_substream* ss)
         // mark prepared buffer as 45 -> '_'
         memset(runtime->dma_area, 45, mydev->pcm_buffer_size);
     }
-    */
+    
 
 /*
     if (!mydev->running)
@@ -281,10 +282,10 @@ static void dma_snd_timer_function(unsigned long data)
         mydev->msgdma0_reg,
         0,
         (mydev->substream->dma_buffer.area + pcm_buffer_addr),
-        4,
+        MSGDMA_MAX_TX_LEN,
         TX_COMPL_IRQ_EN);
-    mydev->buf_pos += 4;
-    pcm_buffer_addr = mydev->substream->dma_buffer.addr += 4;
+    mydev->buf_pos += MSGDMA_MAX_TX_LEN;
+    pcm_buffer_addr = mydev->substream->dma_buffer.addr += MSGDMA_MAX_TX_LEN;
     
     //dbg("DMA buffer area %x", mydev->substream->dma_buffer.area);
     dbg("Done capturing bytes mydev->buf_pos %x pcm_buffer_addr: %x", mydev->buf_pos, pcm_buffer_addr);
