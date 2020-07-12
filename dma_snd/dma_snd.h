@@ -22,17 +22,25 @@
 
 #define MSGDMA_MAP_SIZE     0x30
 
-#define MSGDMA_MAX_TX_LEN   (1 << 10) // 1 KB
+/* ALSA constraints for efficient communication
+ *
+ *  PCM interrupt interval -> ex: 10ms
+ *  Period -> how many frames per one PCM interrupt
+ *  Frame -> 1 sample from all channels, here: 1 channel * 1 sample in bytes = 1 * 4 = 4 B
+ */
+#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB // TODO: this is set to 2KB in hw?
 #define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak to 4MB?
 
 #define TX_TIMEOUT          HZ // 1 second
-#define SAMPLE_TIMEOUT      HZ / 93 // sample 0.75 second faster -> find integer multiples
+#define DMA_TX_FREQ         HZ / 960
 
-#define MAX_BUFFERS         8
-#define MAX_PERIODS         MAX_BUFFERS
-#define BUFFER_SAMPLES       1024 // TODO: all to tweak, for now for a skeleton
+// assuming IRQ every 10 ms i.e. 100 in a second
+#define PERIOD_SAMPLES      960
+#define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
+#define MAX_PERIODS_IN_BUF  100
+#define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF
 
-static int debug = 1;
+static int debug = 0;
 #undef dbg
 #define dbg(format, arg...) do { if (debug) pr_info(": " format "\n", ##arg); } while (0)
 
@@ -134,7 +142,7 @@ struct msgdma_data {
     struct timer_list timer;
 
     struct snd_pcm_substream* substream; // do not make use of the runtime pointer, instead set all data by myself
-    unsigned int buf_pos; /* position in buffer */
+    unsigned int buf_pos; /* position in buffer in bytes */
 };
 
 /* SND MINIVOSC Data */
@@ -153,10 +161,10 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     .channels_min       = 1,
     .channels_max       = 1, // can be extended to 2?
     .buffer_bytes_max   = DMA_BUF_SIZE,
-    .period_bytes_min  = 4 * BUFFER_SAMPLES, 
-    .period_bytes_max  = 4 * BUFFER_SAMPLES, // TODO: consult buffer sizes
-    .periods_min        = MAX_PERIODS, // TODO: this triggers how often a PCM interrupt is triggered, to tweak!!!!!
-    .periods_max        = MAX_PERIODS, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
+    .period_bytes_min   = PERIOD_SIZE_BYTES, 
+    .period_bytes_max   = PERIOD_SIZE_BYTES, // TODO: consult buffer sizes
+    .periods_min        = MIN_PERIODS_IN_BUF, // TODO: this triggers how often a PCM interrupt is triggered, to tweak!!!!!
+    .periods_max        = MAX_PERIODS_IN_BUF, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
 
 // stick to dma-snd naming convention even though for now we support just dma (without snd ALSA part)
