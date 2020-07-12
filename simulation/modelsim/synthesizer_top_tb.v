@@ -38,6 +38,43 @@ module synthesizer_top_tb;
 		#20 // stabilization wait (maybe shorter)
 	@ (negedge clk); //use negedge here because at posedge we make changes in module
 	
+	// TESTS FOR SINGLE NOTES STABILITY
+	$display("[%t] Start single note - C1", $time);
+	#10
+	r_data = 16'b1_0100100_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	#10000
+	r_data = 16'b0_0100100_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	
+	$display("[%t] Start single note - F2", $time);
+	#10
+	r_data = 16'b1_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	#10000
+	r_data = 16'b0_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	
+	$display("[%t] Start single note - F2", $time);
+	#10
+	r_data = 16'b1_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	#10000
+	r_data = 16'b0_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0; // TODO: Finish once DMA part is finalized, test thoroughly and fix the generating issues - wrong frequency offsets
+	/* TESTS FOR FUNCTIONAL COMPLETENESS
 	$display("[%t] Start single note - A4", $time);
 	#10
 	r_data = 16'b1_1000101_0000_0000; // START A4
@@ -187,6 +224,7 @@ module synthesizer_top_tb;
 	#10
 	write = 1'b0;
 	#1500								// total 150ns
+	*/
 	$display("[%t] Done", $time);
 	$finish; // not testing velocity for now
 	end

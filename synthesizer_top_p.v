@@ -7,7 +7,8 @@ module synthesizer_top_p(input clk,
 							  input [31:0] avs_s0_writedata, // control signals for writing and reading have to be added
 							  output [31:0] avs_s0_readdata,
 							  output o_dac_out,
-							  output reg [31:0] aso_ss0_data);
+							  output reg [31:0] aso_ss0_data,
+							  output reg aso_ss0_valid);
 							  //output [23:0] current_out); //debug value
 	
 	parameter NSAMPLES = 100;
@@ -16,6 +17,7 @@ module synthesizer_top_p(input clk,
 	reg [23:0] mixed_samples[NSAMPLES-1:0];
 	reg [15:0]	r_oneshot_data; // incoming signal
 	reg clk_en;
+	reg ss0_valid_fast_r1, ss0_valid_fast_r2, ss0_valid_fast_r3;
 	integer read;
 	integer write;
 	
@@ -56,6 +58,9 @@ module synthesizer_top_p(input clk,
 		clk_en = 1'b1;
 		r_dac_in = 24'b0;
 		aso_ss0_data = 32'b0;
+		ss0_valid_fast_r1 = 1'b0;
+		ss0_valid_fast_r2 = 1'b0;
+		ss0_valid_fast_r3 = 1'b0;
 	end
 	
 	// generator and system clock
@@ -64,6 +69,9 @@ module synthesizer_top_p(input clk,
 			r_oneshot_data <= 16'b0;
 			write <= 1;
 			clk_en <= 1'b0;
+			ss0_valid_fast_r1 <= 1'b0;
+			ss0_valid_fast_r2 <= 1'b0;
+			ss0_valid_fast_r3 <= 1'b0;
 		end else begin 
 	// this logic has to be turned off for simulating -> too slow clock for sampling
 			if (read == write) begin // written enough samples, wait until free slot available
@@ -71,15 +79,26 @@ module synthesizer_top_p(input clk,
 			end else begin 
 				if (w_rdy) begin // if got a full 10 batch
 					mixed_samples[write] <= w_mixed_sample;
+					
 					if (write == NSAMPLES) begin
 						write <= 0;
 					end else begin
 						write <= write + 1;
 					end
-				end
+				end 
 				clk_en <= 1'b1;
 			end
-
+			
+			// catching the valid signal and signalizing it to the mSGDMA
+			ss0_valid_fast_r1 <= w_clk_96k;
+			ss0_valid_fast_r2 <= ss0_valid_fast_r1;
+			ss0_valid_fast_r3 <= ss0_valid_fast_r2;
+			
+			if (ss0_valid_fast_r3 == 1'b0 && ss0_valid_fast_r2 == 1'b1) begin // this will find a rising edge of slow clock(with a two clock delay)
+				aso_ss0_valid <= 1'b1;
+			end else begin
+				aso_ss0_valid <= 1'b0;
+			end
 			// Avalon communication logic
 			if (avs_s0_write) begin
 				r_oneshot_data <= avs_s0_writedata[15:0];
@@ -90,14 +109,14 @@ module synthesizer_top_p(input clk,
 		end
 	end
 
-	// clock for DAC sampling (read==write will not happen?)
+	// clock for DAC sampling and outputing samples to mSGDMA(read==write will not happen?)
 	always @(posedge w_clk_96k or posedge reset) begin
 		if (reset) begin
 			read <= 0;
 			r_dac_in <= 24'b0;
 			aso_ss0_data <= 32'b0;
 		end else
-		if (read == NSAMPLES) begin // FINISH this concept and then try compiling everything, get the signal out on the GPIO, check what is being output
+		if (read == NSAMPLES) begin
 			r_dac_in <= mixed_samples[NSAMPLES];
 			aso_ss0_data <= mixed_samples[NSAMPLES]; // for now write mixed value (can write them 1by1 though)
 			read <= 0;
