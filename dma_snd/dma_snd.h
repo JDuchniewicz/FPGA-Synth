@@ -180,7 +180,6 @@ static int dma_snd_remove(struct platform_device* pdev);
 static int dma_snd_pcm_open(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_close(struct snd_pcm_substream* ss);
 static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params);
-//static int dma_snd_hw_free(struct snd_pcm_substream* ss);
 static int dma_snd_prepare(struct snd_pcm_substream* ss);
 static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd);
 static int dma_snd_pcm_dev_free(struct snd_device* device);
@@ -190,19 +189,13 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev);
 static void dma_snd_timer_stop(struct msgdma_data* mydev);
-//static void dma_snd_pos_update(struct msgdma_data* mydev);
 static void dma_snd_timer_function(unsigned long data);
-/*
-static void dma_snd_xfer_buf(struct msgdma_data* mydev, unsigned int count);
-static void dma_snd_fill_capture_buf(struct msgdma_data* mydev, unsigned int bytes);
-*/
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
     .open       = dma_snd_pcm_open,
     .close      = dma_snd_pcm_close,
     .ioctl      = snd_pcm_lib_ioctl,
     .hw_params  = dma_snd_hw_params,
-    //.hw_free    = dma_snd_hw_free,
     .prepare    = dma_snd_prepare,
     .trigger    = dma_snd_pcm_trigger,
     .pointer    = dma_snd_pcm_pointer,

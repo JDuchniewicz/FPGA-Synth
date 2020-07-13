@@ -75,13 +75,6 @@ static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_par
     // nothing to do here
     return 0;
 }
-/*
-static int dma_snd_hw_free(struct snd_pcm_substream* ss)
-{
-    dbg("%s", __func__);
-    return snd_pcm_lib_free_pages(ss);
-}
-*/
 
 static int dma_snd_prepare(struct snd_pcm_substream* ss)
 {
@@ -170,11 +163,6 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev)
 {
-    /*
-    dbg("   %s: mydev->period_size_frac: %u; mydev->irq_pos: %u jiffies: %lu pcm_bps %u",mydev->period_size_frac, mydev->irq_pos, mydev->pcm_bps);
-    tick = mydev->period_size_frac - mydev->irq_pos; // how far are we in the current period of the waveform
-    tick = (tick + mydev->pcm_bps - 1) / mydev->pcm_bps; // + pcm_bps to prevent negative value overflow
-    */
     // update every 1/960 second
     mydev->timer.expires = jiffies + DMA_TX_FREQ;
     add_timer(&mydev->timer);
@@ -195,7 +183,6 @@ static void dma_snd_timer_function(unsigned long data)
     if (!mydev->running)
         return;
 
-// FOR NOW VERY SIMPLE LATER TWEAK SIZES TO MAKE USE OF WHOLE AVAILABLE DMA BUFFEr    
     dbg("   dma_snd_timer_function buf_pos %d read_addr %x", mydev->buf_pos, read_addr);
 
     dma_snd_push_descr(
@@ -248,14 +235,9 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
         if (!data->running)
             goto __eexit;
 
-
-   //     dbg("Interrupt ackonwledged!");
         snd_pcm_period_elapsed(data->substream);
-        //data->rd_in_progress = 0; // this will wake up the read function waiting on the queue
-        //wake_up_interruptible(&data->rd_complete_wq);
     }
 
-//    dbg("Interrupt end!");
 __eexit:
     return IRQ_HANDLED;
 }
@@ -320,7 +302,6 @@ static int dma_snd_probe(struct platform_device* pdev)
     struct snd_card* card;
     int nr_subdevs = 1; // how many capture substreams (by default just 1)
     struct snd_pcm* pcm;
-    //int dev_id = pdev->id;
     int ret = 0;
 
     dbg("DMA_SND Probe entered");
@@ -328,8 +309,7 @@ static int dma_snd_probe(struct platform_device* pdev)
     dev = &pdev->dev;
     
     /* ALSA part */
-    // for now separately allocate dma and alsa stuff, then think about merging it
-    ret = snd_card_new(dev, 3, "FPGA Synthesizer Card", THIS_MODULE, sizeof(struct msgdma_data), &card);
+    ret = snd_card_new(dev, 3, "FPGA_Synth", THIS_MODULE, sizeof(struct msgdma_data), &card);
     if (ret < 0)
         goto __nodev;
 
