@@ -35,85 +35,79 @@ static void dma_snd_push_descr(
 }
 
 /* ALSA functions */
-static int dma_snd_pcm_open(struct snd_pcm_substream* ss)
+static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
 {
-    struct msgdma_data* mydev = ss->private_data;
+    struct msgdma_data* mydev = substr->private_data;
     dbg("%s", __func__);
     mutex_lock(&mydev->cable_lock);
 
-    // set runtime DMA buffer information
-    ss->runtime->dma_area = mydev->dma_buf_rd;
-    ss->runtime->dma_bytes = DMA_BUF_SIZE;
-    ss->runtime->dma_addr = mydev->dma_buf_rd_handle;
+    /* set runtime DMA buffer information */
+    substr->runtime->dma_area = mydev->dma_buf_rd;
+    substr->runtime->dma_bytes = DMA_BUF_SIZE;
+    substr->runtime->dma_addr = mydev->dma_buf_rd_handle;
 
-    ss->runtime->hw = dma_snd_pcm_hw;
+    substr->runtime->hw = dma_snd_pcm_hw;
 
-    mydev->substream = ss;
-    ss->runtime->private_data = mydev;
+    mydev->substream = substr;
+    substr->runtime->private_data = mydev;
 
-    // SETUP TIMER here
-    setup_timer(&mydev->timer, dma_snd_timer_function, (unsigned long)mydev);
+    /* SETUP timer */
+    setup_timer(&mydev->timer, dma_snd_fillbuf, (unsigned long)mydev);
     mutex_unlock(&mydev->cable_lock);
     return 0;
 }
 
-static int dma_snd_pcm_close(struct snd_pcm_substream* ss)
+static int dma_snd_pcm_close(struct snd_pcm_substream* substr)
 {
-    struct msgdma_data* mydev = ss->private_data;
+    struct msgdma_data* mydev = substr->private_data;
     dbg("%s", __func__);
 
+    /* reset the mSGDMA */
+    dma_snd_reset(mydev->msgdma0_reg); // TODO: this might be superfluous, to do last checking later
     // even though the mutex will be set to null already, lock it
     mutex_lock(&mydev->cable_lock);
-    ss->private_data = NULL;
+    substr->private_data = NULL;
     mutex_unlock(&mydev->cable_lock);
     return 0;
 }
 
-static int dma_snd_hw_params(struct snd_pcm_substream* ss, struct snd_pcm_hw_params* hw_params)
+static int dma_snd_hw_params(struct snd_pcm_substream* substr, struct snd_pcm_hw_params* hw_params)
 {
     dbg("%s", __func__);
-    // nothing to do here
     return 0;
 }
 
-static int dma_snd_prepare(struct snd_pcm_substream* ss)
+static int dma_snd_prepare(struct snd_pcm_substream* substr)
 {
-    struct msgdma_data* mydev = ss->private_data;
+    struct msgdma_data* mydev = substr->private_data;
     dbg("%s", __func__);
 
     mydev->buf_pos = 0;
-
-    //dbg("This substream max DMA buffer size %d max DMA size %d DMA address %x Other max size parameter %d ", ss->buffer_bytes_max, ss->dma_max, ss->dma_buffer.addr, ss->dma_buffer.bytes);
-    mutex_lock(&mydev->cable_lock);
-    mydev->valid |= 1 << ss->stream;
-    mutex_unlock(&mydev->cable_lock);
-
     return 0;
 }
 
-static int dma_snd_pcm_trigger(struct snd_pcm_substream* ss, int cmd)
+static int dma_snd_pcm_trigger(struct snd_pcm_substream* substr, int cmd)
 {
     int ret = 0;
-    struct msgdma_data* mydev = ss->private_data;
+    struct msgdma_data* mydev = substr->private_data;
     dbg("%s - trigger %d", __func__, cmd);
 
     switch (cmd)
     {
         case SNDRV_PCM_TRIGGER_START:
-            // start the hw capture
+            /* start the hw capture */
             if (!mydev->running)
             {
-                mydev->last_jiffies = jiffies;
-                // SET OFF the timer
+                /* START the timer */
                 dma_snd_timer_start(mydev);
             }
-            mydev->running |= 1 << ss->stream; // add a bitmask for each stream that is running (in our case just one)
+            mydev->running |= 1 << substr->stream; // add a bitmask for each stream that is running (in our case just one)
             break;
         case SNDRV_PCM_TRIGGER_STOP:
-            // stop the hw capture
-            mydev->running &= ~(1 << ss->stream);
+            /* stop the hw capture */
+            mydev->running &= ~(1 << substr->stream);
             if (!mydev->running)
-                // STOP the timer 
+                /* STOP the timer */
                 dma_snd_timer_stop(mydev);
             break;
         default:
@@ -148,13 +142,12 @@ static int dma_snd_pcm_free(struct msgdma_data* chip)
     return 0;
 }
 
-static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
+static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* substr)
 {
-    struct msgdma_data* mydev = ss->private_data; // TODO: change mydev to something more meaningful
+    struct msgdma_data* mydev = substr->private_data; // TODO: change mydev to something more meaningful
     snd_pcm_uframes_t pos = 0;
     dbg("%s", __func__);
-    pos = bytes_to_frames(ss->runtime, mydev->buf_pos * PERIOD_SIZE_BYTES); // check thhis
-    //dma_snd_pos_update(mydev); // TODO: should I update anything? probably not, just return the byte received
+    pos = bytes_to_frames(substr->runtime, mydev->buf_pos * PERIOD_SIZE_BYTES);
     dbg("   dma_snd_pcm_pointer %ld", pos);
     return pos;
 }
@@ -163,7 +156,7 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss)
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev)
 {
-    // update every 1/960 second
+    /* update every DMA_TX_FREQ */
     mydev->timer.expires = jiffies + DMA_TX_FREQ;
     add_timer(&mydev->timer);
 }
@@ -174,7 +167,7 @@ static void dma_snd_timer_stop(struct msgdma_data* mydev)
     del_timer(&mydev->timer);
 }
 
-static void dma_snd_timer_function(unsigned long data)
+static void dma_snd_fillbuf(unsigned long data)
 {
     struct msgdma_data* mydev = (struct msgdma_data*)data;
     struct snd_pcm_runtime* runtime = mydev->substream->runtime;
@@ -183,7 +176,7 @@ static void dma_snd_timer_function(unsigned long data)
     if (!mydev->running)
         return;
 
-    dbg("   dma_snd_timer_function buf_pos %d read_addr %x", mydev->buf_pos, read_addr);
+    dbg("   dma_snd_fillbuf buf_pos %d read_addr %x", mydev->buf_pos, read_addr);
 
     dma_snd_push_descr(
         mydev->msgdma0_reg,
@@ -195,7 +188,7 @@ static void dma_snd_timer_function(unsigned long data)
     ++mydev->buf_pos;
     if (mydev->buf_pos >= MAX_PERIODS_IN_BUF)
         mydev->buf_pos = 0;
-    // SET OFF the timer
+    /* RESTART the timer */
     dma_snd_timer_start(mydev);
 }
 
@@ -410,8 +403,6 @@ static int dma_snd_probe(struct platform_device* pdev)
 
     data->rd_in_progress = 0;
     init_waitqueue_head(&data->rd_complete_wq);
-
-
     ret = dma_snd_register_chrdev(data); // TODO: remove char device totally, leave this driver just as an ALSA soundcard!!!
     if (ret < 0)
         return ret;

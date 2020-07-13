@@ -21,15 +21,16 @@
 #define DEV_NAME            "dma_snd" // later rethink this name (maybe dma_vosc or fpga_vosc)?
 
 #define MSGDMA_MAP_SIZE     0x30
+#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB // TODO: this is set to 2KB in hw?
+#define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak to 4MB?
 
 /* ALSA constraints for efficient communication
  *
  *  PCM interrupt interval -> ex: 10ms
  *  Period -> how many frames per one PCM interrupt
  *  Frame -> 1 sample from all channels, here: 1 channel * 1 sample in bytes = 1 * 4 = 4 B
+ *  Buffer -> holds some periods in ring-like fashion, PCM reads from it
  */
-#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB // TODO: this is set to 2KB in hw?
-#define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak to 4MB?
 
 #define TX_TIMEOUT          HZ // 1 second
 #define DMA_TX_FREQ         HZ / 960
@@ -124,37 +125,27 @@ struct msgdma_data {
     // to be removed?
     struct class *cl;
 
-
-
-    // FOR NOW COPIED FROM snd_pcm_device!! // TODO: rename and clean
     struct snd_card* card;
     struct snd_pcm* pcm;
     const struct dma_snd_pcm_ops* timer_ops;
     /* just one substream so keep all data in this struct */
     struct mutex cable_lock;
     /* flags */
-    unsigned int valid;
     unsigned int running;
-    unsigned int period_update_pending :1;
     /* timer stuff */
-    unsigned int period_size;
-    unsigned long last_jiffies;
     struct timer_list timer;
 
-    struct snd_pcm_substream* substream; // do not make use of the runtime pointer, instead set all data by myself
+    struct snd_pcm_substream* substream; 
     unsigned int buf_pos; /* position in buffer in bytes */
 };
 
 /* SND MINIVOSC Data */
-#define byte_pos(x) ((x) / HZ)
-#define frac_pos(x) ((x) * HZ)
-
 static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything with dma_snd
     .info = (SNDRV_PCM_INFO_MMAP |
     SNDRV_PCM_INFO_INTERLEAVED |
     SNDRV_PCM_INFO_BLOCK_TRANSFER |
     SNDRV_PCM_INFO_MMAP_VALID),
-    .formats            = SNDRV_PCM_FMTBIT_S24_LE, // for now store as 32-bit values with last byte zeroed out
+    .formats            = SNDRV_PCM_FMTBIT_S32_LE, // for now store as 32-bit values with last byte zeroed out //TODO: decide on the correct format
     .rates              = SNDRV_PCM_RATE_96000,
     .rate_min           = 96000,
     .rate_max           = 96000,
@@ -162,8 +153,8 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     .channels_max       = 1, // can be extended to 2?
     .buffer_bytes_max   = DMA_BUF_SIZE,
     .period_bytes_min   = PERIOD_SIZE_BYTES, 
-    .period_bytes_max   = PERIOD_SIZE_BYTES, // TODO: consult buffer sizes
-    .periods_min        = MIN_PERIODS_IN_BUF, // TODO: this triggers how often a PCM interrupt is triggered, to tweak!!!!!
+    .period_bytes_max   = PERIOD_SIZE_BYTES,
+    .periods_min        = MIN_PERIODS_IN_BUF, // this triggers how often a PCM interrupt is triggered, to tweak!!!!!
     .periods_max        = MAX_PERIODS_IN_BUF, // This is max number of periods in the buffer -> DMA_BUF_SIZE / period size
 };
 
@@ -189,7 +180,7 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev);
 static void dma_snd_timer_stop(struct msgdma_data* mydev);
-static void dma_snd_timer_function(unsigned long data);
+static void dma_snd_fillbuf(unsigned long data);
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
     .open       = dma_snd_pcm_open,
