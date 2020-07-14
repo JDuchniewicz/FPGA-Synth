@@ -48,7 +48,7 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#1
 	write = 1'b0;
-	#100000
+	#1000000
 	r_data = 16'b0_1011011_0000_0000;
 	write = 1'b1;
 	#1

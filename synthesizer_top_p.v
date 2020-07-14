@@ -80,7 +80,7 @@ module synthesizer_top_p(input clk,
 				if (w_rdy) begin // if got a full 10 batch
 					mixed_samples[write] <= w_mixed_sample;
 					
-					if (write == NSAMPLES) begin
+					if (write == NSAMPLES - 1) begin
 						write <= 0;
 					end else begin
 						write <= write + 1;
@@ -116,9 +116,9 @@ module synthesizer_top_p(input clk,
 			r_dac_in <= 24'b0;
 			aso_ss0_data <= 32'b0;
 		end else
-		if (read == NSAMPLES) begin
-			r_dac_in <= mixed_samples[NSAMPLES];
-			aso_ss0_data <= mixed_samples[NSAMPLES]; // for now write mixed value (can write them 1by1 though)
+		if (read == NSAMPLES - 1) begin
+			r_dac_in <= mixed_samples[NSAMPLES - 1];
+			aso_ss0_data <= mixed_samples[NSAMPLES - 1]; // for now write mixed value (can write them 1by1 though)
 			read <= 0;
 		end else begin
 			r_dac_in <= mixed_samples[read];
