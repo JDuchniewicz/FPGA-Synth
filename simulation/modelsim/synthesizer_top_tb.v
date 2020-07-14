@@ -39,10 +39,10 @@ module synthesizer_top_tb;
 		
 		#20 // stabilization wait (maybe shorter)
 	@ (negedge clk); //use negedge here because at posedge we make changes in module
-	
+	/*
 	// TESTS FOR SINGLE NOTES STABILITY
 
-	$display("[%t] Start single note - C2", $time);
+	$display("[%t] Start single note - G6", $time);
 	#1
 	r_data = 16'b1_1011011_0000_0000;
 	write = 1'b1;
@@ -53,6 +53,35 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#1
 	write = 1'b0;
+	*/
+	// TESTS FOR MULTIPLE SIMULTANEOUS NOTES STABILITY
+
+	$display("[%t] Start single note - G6", $time);
+	#1
+	r_data = 16'b1_1011011_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1
+	$display("[%t] Start single note - C4", $time);
+	#20
+	r_data = 16'b1_0111100_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+
+	#1000000
+	r_data = 16'b0_0111100_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1
+	r_data = 16'b0_1011011_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+
 	/*	
 	$display("[%t] Start single note - F2", $time);
 	#10

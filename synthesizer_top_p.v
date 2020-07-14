@@ -14,7 +14,7 @@ module synthesizer_top_p(input clk,
 	parameter NSAMPLES = 100;
 	
 	// a ring buffer sample storage
-	reg [23:0] mixed_samples[NSAMPLES-1:0];
+	reg signed[23:0] mixed_samples[NSAMPLES-1:0];
 	reg [15:0]	r_oneshot_data; // incoming signal
 	reg clk_en;
 	reg ss0_valid_fast_r1, ss0_valid_fast_r2, ss0_valid_fast_r3;
@@ -24,7 +24,7 @@ module synthesizer_top_p(input clk,
 	// DAC connections
 	reg signed[23:0] r_dac_in;
 	
-	wire[23:0] w_osignal;
+	wire signed[23:0] w_osignal;
 	wire w_rdy;
 	wire signed[23:0] w_mixed_sample;
 	
@@ -40,7 +40,7 @@ module synthesizer_top_p(input clk,
 	// global modules like noise adders may be present here and wired to bm
 	// bm manages pipelines which perform all steps of signal processing and output ready signal via bm
 	
-	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
+	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal >>> 4), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
 	dac_dsm2_top dac(.din(r_dac_in), .dout(o_dac_out), .clk(w_clk_96k), .n_rst(~reset)); // DAC MASH from WZab
 	
 	// stages of pipeline:
