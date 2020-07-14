@@ -32,30 +32,64 @@ module mixer(input clk,
 			v_idx <= 0;
 		end 
 		
-		else if (clk_en) begin // TODO: no need for complex logic, just reset buffer on each 0th cycle and output out buffer
+		else if (clk_en) begin
 			// handle overflow/underflow
-			if (r_mixed + i_data > MAX_SIGNED) begin // OF
-				r_mixed <= (v_idx === 9 ? 24'b0 : MAX_SIGNED);
-				o_mixed <= (v_idx === 9 ? MAX_SIGNED : 24'b0);
-				r_overflow <= r_overflow + (r_mixed + i_data - MAX_SIGNED);
-			end else if (r_mixed + i_data < MIN_SIGNED) begin // UF
-				r_mixed <= (v_idx === 9 ? 24'b0 : MIN_SIGNED);
-				o_mixed <= (v_idx === 9 ? MIN_SIGNED : 24'b0);
-				r_overflow <= r_overflow + (r_mixed + i_data - MIN_SIGNED);
-			end else begin 					// in range - try offloading the overflow
-				if (r_mixed + i_data + r_overflow > MAX_SIGNED) begin // OF still too big
-					r_mixed <= (v_idx === 9 ? 24'b0 : MAX_SIGNED);
-					o_mixed <= (v_idx === 9 ? MAX_SIGNED : 24'b0);
-					r_overflow <= r_mixed + i_data + r_overflow - MAX_SIGNED;
-				end else if (r_mixed + i_data + r_overflow < MIN_SIGNED) begin // UF still too small
-					r_mixed <= (v_idx === 9 ? 24'b0 : MIN_SIGNED);
-					o_mixed <= (v_idx === 9 ? MIN_SIGNED : 24'b0);
-					r_overflow <= r_mixed + i_data + r_overflow - MIN_SIGNED;
-				end else begin // can get rid off of the OF/UF or equal to 0
-					r_mixed <= (v_idx === 9 ? 24'b0 : r_mixed + i_data + r_overflow);
-					o_mixed <= (v_idx === 9 ? r_mixed + i_data + r_overflow : 24'b0);
+			if (v_idx === 9) begin // because in-sync with BM, do everything in 10 cycles, reset r_mixed and output o_mixed + i_data in range
+				if (r_mixed + i_data > MAX_SIGNED) begin // OF, output max and fill new reg with i_data + as much of overflow as possible
+					o_mixed <= MAX_SIGNED; // output maximum
+					// r_mixed + i_data - MAX_SIGNED <- how much current sample overflows the buffer
+					if ((r_mixed + i_data - MAX_SIGNED) + r_overflow > MAX_SIGNED) begin // OF remainder + curr_overflow too big, reduce OF but add remainder
+						r_mixed <= MAX_SIGNED;
+						r_overflow <= r_overflow + (r_mixed + i_data - MAX_SIGNED) - MAX_SIGNED;
+					end else begin
+						r_mixed <= r_overflow + (r_mixed + i_data - MAX_SIGNED);
+						r_overflow <= 28'b0; // all of it went to mixed;
+					end
+				end else if (r_mixed + i_data < MIN_SIGNED) begin // UF
+					o_mixed <= MIN_SIGNED; // output maximum
+					// r_mixed + i_data - MIN_SIGNED <- how much current sample underflows the buffer
+					if ((r_mixed + i_data - MIN_SIGNED) + r_overflow < MIN_SIGNED) begin // UF remainder + curr_overflow too small, reduce UF but add remainder
+						r_mixed <= MIN_SIGNED;
+						r_overflow <= r_overflow + (r_mixed + i_data - MIN_SIGNED) - MIN_SIGNED;
+					end else begin
+						r_mixed <= r_overflow + (r_mixed + i_data - MIN_SIGNED);
+						r_overflow <= 28'b0; // all of it went to mixed;
+					end
+				end else begin 					// in range - try offloading the overflow
+					if (r_mixed + i_data + r_overflow > MAX_SIGNED) begin // OF still too big
+						o_mixed <= MAX_SIGNED;
+						r_mixed <= (r_mixed + i_data + r_overflow) - MAX_SIGNED;
+					end else if (r_mixed + i_data + r_overflow < MIN_SIGNED) begin // UF still too small
+						o_mixed <= MIN_SIGNED;
+						r_mixed <= (r_mixed + i_data + r_overflow) - MIN_SIGNED;
+					end else begin // can get rid off of the OF/UF or equal to 0
+						o_mixed <= r_mixed + i_data + r_overflow;
+						r_mixed <= 28'b0;
+					end
+					r_overflow <= 28'b0; // OF is now empty, all in reg
 				end
+			end else begin
+				if (r_mixed + i_data > MAX_SIGNED) begin // OF
+					r_mixed <= MAX_SIGNED;
+					r_overflow <= r_overflow + (r_mixed + i_data - MAX_SIGNED);
+				end else if (r_mixed + i_data < MIN_SIGNED) begin // UF
+					r_mixed <= MIN_SIGNED;
+					r_overflow <= r_overflow + (r_mixed + i_data - MIN_SIGNED);
+				end else begin 					// in range - try offloading the overflow
+					if (r_mixed + i_data + r_overflow > MAX_SIGNED) begin // OF still too big
+						r_mixed <= MAX_SIGNED;
+						r_overflow <= r_mixed + i_data + r_overflow - MAX_SIGNED;
+					end else if (r_mixed + i_data + r_overflow < MIN_SIGNED) begin // UF still too small
+						r_mixed <= MIN_SIGNED;
+						r_overflow <= r_mixed + i_data + r_overflow - MIN_SIGNED;
+					end else begin // can get rid off of the OF/UF or equal to 0
+						r_mixed <= r_mixed + i_data + r_overflow;
+						r_overflow <= 28'b0;
+					end
+				end
+				o_mixed <= 24'b0;
 			end
+			
 			
 			o_rdy <= (v_idx === 9 ? 1'b1 : 1'b0);
 			v_idx <= (v_idx === 9 ? 0 : v_idx + 1);
