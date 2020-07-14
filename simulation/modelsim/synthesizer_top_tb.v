@@ -1,6 +1,6 @@
 // testbench for the top module of synthesizer 
 
-`timescale 1ns/100ps
+`timescale 10ns/1ns // 1 clock cycle of 100MHz clock is 10ns
 
 module synthesizer_top_tb;
 	// in
@@ -13,6 +13,7 @@ module synthesizer_top_tb;
 	// out
 	wire [15:0] w_signal;
 	wire [31:0] avalon_write_data, avalon_read_data, aso_read_data;
+	wire w_aso_valid;
 	wire dac_out;
 	
 	// simulate Avalon write issuing, trigger write for one cycle
@@ -24,6 +25,7 @@ module synthesizer_top_tb;
 							   .avs_s0_readdata(avalon_read_data),
 								.o_dac_out(dac_out),
 								.aso_ss0_data(aso_read_data),
+								.aso_ss0_valid(w_aso_valid),
 								.current_out(w_signal));
 								
 	assign avalon_write_data = { {16{1'b0}}, r_data };
@@ -39,18 +41,19 @@ module synthesizer_top_tb;
 	@ (negedge clk); //use negedge here because at posedge we make changes in module
 	
 	// TESTS FOR SINGLE NOTES STABILITY
-	$display("[%t] Start single note - C1", $time);
-	#10
-	r_data = 16'b1_0100100_0000_0000;
+
+	$display("[%t] Start single note - C2", $time);
+	#1
+	r_data = 16'b1_1011011_0000_0000;
 	write = 1'b1;
-	#10
+	#1
 	write = 1'b0;
-	#10000
-	r_data = 16'b0_0100100_0000_0000;
+	#100000
+	r_data = 16'b0_1011011_0000_0000;
 	write = 1'b1;
-	#10
+	#1
 	write = 1'b0;
-	
+	/*	
 	$display("[%t] Start single note - F2", $time);
 	#10
 	r_data = 16'b1_0101001_0000_0000;
@@ -62,7 +65,22 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#10
 	write = 1'b0;
-	
+	*/
+	/*
+	// HIGHER FREQUENCIES
+		$display("[%t] Start single note - F2", $time);
+	#10
+	r_data = 16'b1_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	#10000
+	r_data = 16'b0_0101001_0000_0000;
+	write = 1'b1;
+	#10
+	write = 1'b0;
+	*/
+	/*
 	$display("[%t] Start single note - F2", $time);
 	#10
 	r_data = 16'b1_0101001_0000_0000;
@@ -74,6 +92,7 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#10
 	write = 1'b0; // TODO: Finish once DMA part is finalized, test thoroughly and fix the generating issues - wrong frequency offsets
+	*/
 	/* TESTS FOR FUNCTIONAL COMPLETENESS
 	$display("[%t] Start single note - A4", $time);
 	#10
@@ -229,5 +248,5 @@ module synthesizer_top_tb;
 	$finish; // not testing velocity for now
 	end
 	
-	always #5 clk = ~clk; // every 5ns ( this is not our model clock 100MHz, it would need 1ns)
+	always #1 clk = ~clk; // every 1ns
 endmodule
