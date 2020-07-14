@@ -61,16 +61,20 @@ module quarter_sine_p(input clk,
 				o_midi <= 7'b0;
 			end else if(clk_en) begin
 				// clock one
-				r_negate[0][v_idx] <= i_phase[15]; // negate or not
-				r_cur_index <= i_phase[14] ? ~i_phase[13:0] : i_phase[13:0]; // invert index if 2nd MSB is set
+				if (i_valid) begin
+					r_negate[0][v_idx] <= i_phase[15]; // negate or not
+					r_cur_index <= i_phase[14] ? ~i_phase[13:0] : i_phase[13:0]; // invert index if 2nd MSB is set
+				end
 				
 				// clock two
-				if (v_idx == 0) begin
-					r_lut_sine[NBANKS - 1] <= w_sine_out;
-					r_negate[1][NBANKS - 1] <= r_negate[0][NBANKS - 1]; //to avoid overwriting
-				end else begin
-					r_lut_sine[v_idx - 1] <= w_sine_out;
-					r_negate[1][v_idx - 1] <= r_negate[0][v_idx - 1];
+				if (valid[0]) begin // is checking for validity needed?
+					if (v_idx == 0) begin
+						r_lut_sine[NBANKS - 1] <= w_sine_out;
+						r_negate[1][NBANKS - 1] <= r_negate[0][NBANKS - 1]; //to avoid overwriting
+					end else begin
+						r_lut_sine[v_idx - 1] <= w_sine_out;
+						r_negate[1][v_idx - 1] <= r_negate[0][v_idx - 1];
+					end
 				end
 				
 				//clock three
