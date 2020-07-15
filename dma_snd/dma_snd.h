@@ -41,9 +41,10 @@
 #define MAX_PERIODS_IN_BUF  100
 #define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF
 
-static int debug = 0;
+static int debug = 1;
 #undef dbg
 #define dbg(format, arg...) do { if (debug) pr_info(": " format "\n", ##arg); } while (0)
+#define dbg_info(format, arg...) do { if (debug == 2) pr_info(": " format "\n", ##arg); } while (0)
 
 typedef u32 volatile reg_t;
 
@@ -84,6 +85,8 @@ enum STATUS {
     DESC_BUF_EMPTY      = (1 << 1),
     BUSY                = (1 << 0),
 };
+
+#define STATUS_RESET_ALL    GENMASK(9, 0)
 
 enum CONTROL {
     STOP_DESC           = (1 << 5),

@@ -17,8 +17,20 @@ static void clearbit_reg32(volatile void __iomem* reg, u32 mask)
 
 static void dma_snd_reset(struct msgdma_reg* reg)
 {
+    dbg("%s", __func__);
+    /* Clear all existing status bits */
+    setbit_reg32(&reg->csr_status, STATUS_RESET_ALL);
+
+    /* Set the resetting bit, wait until deasserted by the device */
     setbit_reg32(&reg->csr_ctrl, RESET_DISP);
     while (ioread32(&reg->csr_status) & RESETTING);
+
+    dbg("%s done resetting| status: %d control %d", __func__, reg->csr_status, reg->csr_ctrl);
+    /* Set up transfer descriptors */
+    setbit_reg32(&reg->csr_ctrl,
+        STOP_ON_EARLY_TERM | STOP_ON_ERR | GLOBAL_IRQ_EN);
+
+    dbg("%s done setting control bits| status: %d control %d", __func__, reg->csr_status, reg->csr_ctrl);
 }
 
 static void dma_snd_push_descr(
@@ -39,6 +51,8 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
 {
     struct msgdma_data* mydev = substr->private_data;
     dbg("%s", __func__);
+
+    dma_snd_reset(mydev->msgdma0_reg);
     mutex_lock(&mydev->cable_lock);
 
     /* set runtime DMA buffer information */
@@ -62,8 +76,6 @@ static int dma_snd_pcm_close(struct snd_pcm_substream* substr)
     struct msgdma_data* mydev = substr->private_data;
     dbg("%s", __func__);
 
-    /* reset the mSGDMA */
-    dma_snd_reset(mydev->msgdma0_reg); // TODO: this might be superfluous, to do last checking later
     // even though the mutex will be set to null already, lock it
     mutex_lock(&mydev->cable_lock);
     substr->private_data = NULL;
@@ -146,9 +158,9 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* substr)
 {
     struct msgdma_data* mydev = substr->private_data; // TODO: change mydev to something more meaningful
     snd_pcm_uframes_t pos = 0;
-    dbg("%s", __func__);
+    dbg_info("%s", __func__);
     pos = bytes_to_frames(substr->runtime, mydev->buf_pos * PERIOD_SIZE_BYTES);
-    dbg("   dma_snd_pcm_pointer %ld", pos);
+    dbg_info("   dma_snd_pcm_pointer %ld", pos);
     return pos;
 }
 
@@ -176,7 +188,7 @@ static void dma_snd_fillbuf(unsigned long data)
     if (!mydev->running)
         return;
 
-    dbg("   dma_snd_fillbuf buf_pos %d read_addr %x", mydev->buf_pos, read_addr);
+    dbg_info("   dma_snd_fillbuf buf_pos %d read_addr %x", mydev->buf_pos, read_addr);
 
     dma_snd_push_descr(
         mydev->msgdma0_reg,
@@ -220,7 +232,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     struct msgdma_reg* msgdma0_reg = data->msgdma0_reg;
 
-    dbg("DMA device status interrupt %x ", msgdma0_reg->csr_status);
+    dbg_info("DMA device status interrupt %x ", msgdma0_reg->csr_status);
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
@@ -383,8 +395,6 @@ static int dma_snd_probe(struct platform_device* pdev)
 
     /* Initialize the device itself */
     dma_snd_reset(data->msgdma0_reg);
-    setbit_reg32(&data->msgdma0_reg->csr_ctrl,
-        STOP_ON_EARLY_TERM | STOP_ON_ERR | GLOBAL_IRQ_EN);
 
     /* Get device's IRQ number(s) */
     data->msgdma0_irq = platform_get_irq(pdev, 0);
