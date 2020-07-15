@@ -11,7 +11,7 @@ module synthesizer_top_p(input clk,
 							  output reg aso_ss0_valid);
 							  //output [23:0] current_out); //debug value
 	
-	parameter NSAMPLES = 100;
+	parameter NSAMPLES = 10;
 	
 	// a ring buffer sample storage
 	reg signed[23:0] mixed_samples[NSAMPLES-1:0];
@@ -20,6 +20,7 @@ module synthesizer_top_p(input clk,
 	reg ss0_valid_fast_r1, ss0_valid_fast_r2, ss0_valid_fast_r3;
 	integer read;
 	integer write;
+	wire full, empty;
 	
 	// DAC connections
 	reg signed[23:0] r_dac_in;
@@ -30,6 +31,8 @@ module synthesizer_top_p(input clk,
 	
 	wire w_clk_96k;
 	
+	assign full = (read > write ? read - write == 1 : read + NSAMPLES - write == 1);
+	assign empty = (write > read ? write - read == 1 : write + NSAMPLES - read == 1);
 	//DEBUG
 	//assign current_out = w_osignal;
 	
@@ -40,7 +43,7 @@ module synthesizer_top_p(input clk,
 	// global modules like noise adders may be present here and wired to bm
 	// bm manages pipelines which perform all steps of signal processing and output ready signal via bm
 	
-	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal >>> 4), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
+	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal >>> 1), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
 	dac_dsm2_top dac(.din(r_dac_in), .dout(o_dac_out), .clk(w_clk_96k), .n_rst(~reset)); // DAC MASH from WZab
 	
 	// stages of pipeline:
@@ -51,10 +54,15 @@ module synthesizer_top_p(input clk,
 	// adsr -> pipeline
 	// aftereffects -> to be considered
 	
+	integer i;
+	
 	initial begin
+		for (i = 0; i < NSAMPLES; i = i + 1) begin
+			mixed_samples[i] = 24'b0;
+		end
 		r_oneshot_data = 16'b0;
 		read = 0; // 1 element difference
-		write = 1;
+		write = 2;
 		clk_en = 1'b1;
 		r_dac_in = 24'b0;
 		aso_ss0_data = 32'b0;
@@ -66,19 +74,23 @@ module synthesizer_top_p(input clk,
 	// generator and system clock
 	always @ (posedge clk or posedge reset) begin // this will trigger new signal to bm just once
 		if (reset) begin
+			for (i = 0; i < NSAMPLES; i = i + 1) begin
+				mixed_samples[i] = 24'b0;
+			end
 			r_oneshot_data <= 16'b0;
-			write <= 1;
+			write <= 2;
 			clk_en <= 1'b0;
 			ss0_valid_fast_r1 <= 1'b0;
 			ss0_valid_fast_r2 <= 1'b0;
 			ss0_valid_fast_r3 <= 1'b0;
 		end else begin 
 	// this logic has to be turned off for simulating -> too slow clock for sampling
-			if (read == write) begin // written enough samples, wait until free slot available
+			if (full) begin // written enough samples, wait until free slot available
 				clk_en <= 1'b0;
 			end else begin 
 				if (w_rdy) begin // if got a full 10 batch
 					mixed_samples[write] <= w_mixed_sample;
+					//mixed_samples[write] <= w_osignal;
 					
 					if (write == NSAMPLES - 1) begin
 						write <= 0;
@@ -109,21 +121,27 @@ module synthesizer_top_p(input clk,
 		end
 	end
 
-	// clock for DAC sampling and outputing samples to mSGDMA(read==write will not happen?)
+	// clock for DAC sampling and outputing samples to mSGDMA
 	always @(posedge w_clk_96k or posedge reset) begin
 		if (reset) begin
 			read <= 0;
 			r_dac_in <= 24'b0;
 			aso_ss0_data <= 32'b0;
 		end else
-		if (read == NSAMPLES - 1) begin
-			r_dac_in <= mixed_samples[NSAMPLES - 1];
-			aso_ss0_data <= mixed_samples[NSAMPLES - 1]; // for now write mixed value (can write them 1by1 though)
-			read <= 0;
-		end else begin
-			r_dac_in <= mixed_samples[read];
-			aso_ss0_data <= mixed_samples[read];
-			read <= read + 1;
+		if (!empty) begin
+			if (read == NSAMPLES - 1) begin
+				r_dac_in <= {mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]};
+				//r_dac_in <= mixed_samples[NSAMPLES - 1];
+				aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]}; // try switching endiannes?
+				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1]}; // for now write mixed value (can write them 1by1 though)
+				read <= 0;
+			end else begin
+				r_dac_in <= {mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
+				//r_dac_in <= mixed_samples[read];
+				aso_ss0_data <= {{8{1'b0}}, mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
+				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[read]};
+				read <= read + 1;
+			end
 		end
 	end	
 					 
