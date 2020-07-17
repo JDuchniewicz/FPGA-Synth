@@ -84,6 +84,7 @@ module synthesizer_top_tb;
 	#1000
 
 	*/
+	/*
 	// TESTS FOR FIFO BEHAVIOUR
 	$display("[%t] Start single note - G6", $time);
 	#1
@@ -119,12 +120,27 @@ module synthesizer_top_tb;
 	#1
 	write = 1'b0;
 	#1
-	#1_000_000_00 // 0.1 second
+	#1_000_000_0 // 0.01 second
 	r_data = 16'b0_1011011_0000_0000;
 	write = 1'b1;
 	#1
 	write = 1'b0;
 	#1000
+	*/
+	$display("[%t] Start single note - D3", $time);
+	#1
+	r_data = 16'b1_0110010_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1
+	#3000000
+	r_data = 16'b0_0110010_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	
 	/*	
 	$display("[%t] Start single note - F2", $time);
 	#10

@@ -35,6 +35,7 @@ module synthesizer_top_p(input clk,
 	assign empty = (write > read ? write - read == 1 : write + NSAMPLES - read == 1);
 	//DEBUG
 	//assign current_out = w_osignal;
+	reg signed[23:0] buf_0, buf_1, buf_2, buf_3, buf_4, buf_5, buf_6, buf_7, buf_8, buf_9;
 	
 	clk_slow #(96_000) clk_96k(.clk(clk), .rst(reset), .clk_out(w_clk_96k)); // 96kHz
 	
@@ -69,6 +70,17 @@ module synthesizer_top_p(input clk,
 		ss0_valid_fast_r1 = 1'b0;
 		ss0_valid_fast_r2 = 1'b0;
 		ss0_valid_fast_r3 = 1'b0;
+		//debug
+		buf_0 = 24'b0;
+		buf_1 = 24'b0;
+		buf_2 = 24'b0;
+		buf_3 = 24'b0;
+		buf_4 = 24'b0;
+		buf_5 = 24'b0;
+		buf_6 = 24'b0;
+		buf_7 = 24'b0;
+		buf_8 = 24'b0;
+		buf_9 = 24'b0;	
 	end
 	
 	// generator and system clock
@@ -91,6 +103,18 @@ module synthesizer_top_p(input clk,
 				if (w_rdy) begin // if got a full 10 batch
 					mixed_samples[write] <= w_mixed_sample;
 					//mixed_samples[write] <= w_osignal;
+					
+					//debug
+					buf_0 <= w_mixed_sample; // 0 holds new data, rest contains last written stuff
+					buf_1 <= buf_0;
+					buf_2 <= buf_1;
+					buf_3 <= buf_2;
+					buf_4 <= buf_3;
+					buf_5 <= buf_4;
+					buf_6 <= buf_5;
+					buf_7 <= buf_6;
+					buf_8 <= buf_7;
+					buf_9 <= buf_8;
 					
 					if (write == NSAMPLES - 1) begin
 						write <= 0;
@@ -130,16 +154,16 @@ module synthesizer_top_p(input clk,
 		end else
 		if (!empty) begin
 			if (read == NSAMPLES - 1) begin
-				r_dac_in <= {mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]};
-				//r_dac_in <= mixed_samples[NSAMPLES - 1];
-				aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]}; // try switching endiannes?
-				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1]}; // for now write mixed value (can write them 1by1 though)
+				//r_dac_in <= {mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]}; 
+				r_dac_in <= mixed_samples[NSAMPLES - 1]; // DAC should not need endian switching
+				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1][7:0], mixed_samples[NSAMPLES - 1][15:8], mixed_samples[NSAMPLES - 1][23:16]}; // try switching endiannes?
+				aso_ss0_data <= {{8{1'b0}}, mixed_samples[NSAMPLES - 1]}; // for now write mixed value (can write them 1by1 though)
 				read <= 0;
 			end else begin
-				r_dac_in <= {mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
-				//r_dac_in <= mixed_samples[read];
-				aso_ss0_data <= {{8{1'b0}}, mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
-				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[read]};
+				//r_dac_in <= {mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
+				r_dac_in <= mixed_samples[read];
+				//aso_ss0_data <= {{8{1'b0}}, mixed_samples[read][7:0], mixed_samples[read][15:8], mixed_samples[read][23:16]};
+				aso_ss0_data <= {{8{1'b0}}, mixed_samples[read]};
 				read <= read + 1;
 			end
 		end
