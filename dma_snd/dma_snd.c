@@ -169,6 +169,7 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* substr)
 static void dma_snd_timer_start(struct msgdma_data* mydev)
 {
     /* update every DMA_TX_FREQ */
+    dbg_timer("  dma_snd_timer_start jiffies %u ", jiffies_to_msecs(jiffies));
     mydev->timer.expires = jiffies + DMA_TX_FREQ;
     add_timer(&mydev->timer);
 }
@@ -232,7 +233,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     struct msgdma_reg* msgdma0_reg = data->msgdma0_reg;
 
-    dbg_info("DMA device status interrupt %x ", msgdma0_reg->csr_status);
+    dbg_timer("  jiffies %u DMA device status interrupt %x ", jiffies_to_msecs(jiffies), msgdma0_reg->csr_status);
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {

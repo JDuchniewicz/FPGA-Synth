@@ -21,8 +21,8 @@
 #define DEV_NAME            "dma_snd" // later rethink this name (maybe dma_vosc or fpga_vosc)?
 
 #define MSGDMA_MAP_SIZE     0x30
-#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB // TODO: this is set to 2KB in hw?
-#define DMA_BUF_SIZE        (1 << 20) // 1 MB // TODO: tweak to 4MB?
+#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB -> this is half the FIFO buffer in FPGA * sizeof(one_sample) in bytes
+#define DMA_BUF_SIZE        (1 << 20) // 1 MB -> how big the buffer allocated by the driver is (max onetime buffer fill without reading)
 
 /* ALSA constraints for efficient communication
  *
@@ -33,18 +33,19 @@
  */
 
 #define TX_TIMEOUT          HZ // 1 second
-#define DMA_TX_FREQ         HZ / 960
+#define DMA_TX_FREQ         HZ / 100 // every 10 ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
 #define PERIOD_SAMPLES      960
 #define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
-#define MAX_PERIODS_IN_BUF  100
-#define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF
+#define MAX_PERIODS_IN_BUF  2
+#define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF // The size of buffer in kernel, has to be smaller than DMA_BUF_SIZE
 
-static int debug = 1;
+static int debug = 0;
 #undef dbg
-#define dbg(format, arg...) do { if (debug) pr_info(": " format "\n", ##arg); } while (0)
+#define dbg(format, arg...) do { if (debug == 1) pr_info(": " format "\n", ##arg); } while (0)
 #define dbg_info(format, arg...) do { if (debug == 2) pr_info(": " format "\n", ##arg); } while (0)
+#define dbg_timer(format, arg...) do { if (debug == 3) pr_info(": " format "\n", ##arg); } while (0)
 
 typedef u32 volatile reg_t;
 
