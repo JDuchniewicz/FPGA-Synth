@@ -66,7 +66,9 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
     substr->runtime->private_data = mydev;
 
     /* SETUP timer */
-    setup_timer(&mydev->timer, dma_snd_fillbuf, (unsigned long)mydev);
+    hrtimer_init(&mydev->hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    mydev->hr_timer.function = &dma_snd_timer_handler;
+    //setup_timer(&mydev->timer, dma_snd_fillbuf, (unsigned long)mydev);
     mutex_unlock(&mydev->cable_lock);
     return 0;
 }
@@ -168,21 +170,36 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* substr)
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev)
 {
-    /* update every DMA_TX_FREQ */
-    dbg_timer("  dma_snd_timer_start jiffies %u ", jiffies_to_msecs(jiffies));
-    mydev->timer.expires = jiffies + DMA_TX_FREQ;
-    add_timer(&mydev->timer);
+    dbg_timer("%s", __func__);
+
+    hrtimer_start(&mydev->hr_timer, ms_to_ktime(DMA_TX_PERIOD_MS), HRTIMER_MODE_REL);
+    //mydev->timer.expires = jiffies + DMA_TX_FREQ;
+    //add_timer(&mydev->timer);
 }
 
 static void dma_snd_timer_stop(struct msgdma_data* mydev)
 {
-    dbg("%s", __func__);
-    del_timer(&mydev->timer);
+    dbg_timer("%s", __func__);
+    hrtimer_cancel(&mydev->hr_timer);
+    //del_timer(&mydev->timer);
 }
 
-static void dma_snd_fillbuf(unsigned long data)
+enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer)
 {
-    struct msgdma_data* mydev = (struct msgdma_data*)data;
+    struct msgdma_data* mydev = container_of(timer, struct msgdma_data, hr_timer);
+    dbg_timer("%s", __func__);
+
+    /* update every DMA_TX_FREQ */
+    hrtimer_forward_now(timer, ms_to_ktime(DMA_TX_PERIOD_MS));
+
+    dma_snd_fillbuf(mydev);
+    /* RESTART the timer */
+    //dma_snd_timer_start(mydev);
+    return HRTIMER_RESTART;
+}
+
+static void dma_snd_fillbuf(struct msgdma_data* mydev)
+{
     struct snd_pcm_runtime* runtime = mydev->substream->runtime;
     dma_addr_t read_addr = runtime->dma_addr + mydev->buf_pos * PERIOD_SIZE_BYTES;
 
@@ -201,8 +218,6 @@ static void dma_snd_fillbuf(unsigned long data)
     ++mydev->buf_pos;
     if (mydev->buf_pos >= MAX_PERIODS_IN_BUF)
         mydev->buf_pos = 0;
-    /* RESTART the timer */
-    dma_snd_timer_start(mydev);
 }
 
 /* Character file functions */

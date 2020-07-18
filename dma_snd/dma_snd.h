@@ -10,8 +10,9 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
-#include <linux/time.h>
-#include <linux/jiffies.h>
+//#include <linux/time.h>
+//#include <linux/jiffies.h>
+#include <linux/hrtimer.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -32,13 +33,16 @@
  *  Buffer -> holds some periods in ring-like fashion, PCM reads from it
  */
 
+/*
 #define TX_TIMEOUT          HZ // 1 second
 #define DMA_TX_FREQ         HZ / 100 // every 10 ms
+*/
+#define DMA_TX_PERIOD_MS    10 // 10ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
 #define PERIOD_SAMPLES      960
 #define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
-#define MAX_PERIODS_IN_BUF  2
+#define MAX_PERIODS_IN_BUF  10
 #define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF // The size of buffer in kernel, has to be smaller than DMA_BUF_SIZE
 
 static int debug = 0;
@@ -137,7 +141,8 @@ struct msgdma_data {
     /* flags */
     unsigned int running;
     /* timer stuff */
-    struct timer_list timer;
+    //struct timer_list timer;
+    struct hrtimer hr_timer;
 
     struct snd_pcm_substream* substream; 
     unsigned int buf_pos; /* position in buffer in bytes */
@@ -184,7 +189,8 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 /* timer functions */
 static void dma_snd_timer_start(struct msgdma_data* mydev);
 static void dma_snd_timer_stop(struct msgdma_data* mydev);
-static void dma_snd_fillbuf(unsigned long data);
+static void dma_snd_fillbuf(struct msgdma_data* mydev);
+static enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer);
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
     .open       = dma_snd_pcm_open,
