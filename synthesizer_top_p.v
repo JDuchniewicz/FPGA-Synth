@@ -51,11 +51,11 @@ module synthesizer_top_p(input clk,
 	// aftereffects -> to be considered
 	
 	// dummy counter for testing DMA
-	reg[31:0] counter;
-	localparam MAXCOUNT = 96_000;
+	//reg[31:0] counter;
+	//localparam MAXCOUNT = 48_000;
 
 	initial begin
-		counter = 32'b0; // DUMMY
+		//counter = 32'b0; // DUMMY
 		r_oneshot_data = 16'b0;
 		clk_en = 1'b1;
 		r_fifo_in = 24'b0;
@@ -98,16 +98,17 @@ module synthesizer_top_p(input clk,
 				if (!w_empty) begin
 					r_rd_req <= 1'b1;
 					aso_ss0_valid <= 1'b1;
-					r_dac_in <= w_fifo_out;
+					r_dac_in <= w_fifo_out;	
+					aso_ss0_data <= {{8{1'b0}}, w_fifo_out[7:0], w_fifo_out[15:8], w_fifo_out[23:16]};
+					//aso_ss0_data <= {{8{1'b0}}, w_fifo_out};
+					/*
 					aso_ss0_data <= counter;//DEBUG
 					if (counter >= MAXCOUNT) begin
 						counter <= 32'b0;
 					end else begin
 						counter <= counter + 1;
 					end
-
-					//aso_ss0_data <= {{8{1'b0}}, w_fifo_out[7:0], w_fifo_out[15:8], w_fifo_out[23:16]};
-					//aso_ss0_data <= {{8{1'b0}}, w_fifo_out};
+					*/
 				end
 			end else begin
 				r_rd_req <= 1'b0;
