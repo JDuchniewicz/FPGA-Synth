@@ -71,7 +71,6 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
     hrtimer_init(&mydev->hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     mydev->hr_timer.function = &dma_snd_timer_handler;
     dbg("Resolution: %u secs and %u nsecs", time.tv_sec, time.tv_nsec);
-    //setup_timer(&mydev->timer, dma_snd_fillbuf, (unsigned long)mydev);
     mutex_unlock(&mydev->cable_lock);
     return 0;
 }
@@ -176,15 +175,12 @@ static void dma_snd_timer_start(struct msgdma_data* mydev)
     dbg_timer("%s", __func__);
 
     hrtimer_start(&mydev->hr_timer, ms_to_ktime(DMA_TX_PERIOD_MS), HRTIMER_MODE_REL);
-    //mydev->timer.expires = jiffies + DMA_TX_FREQ;
-    //add_timer(&mydev->timer);
 }
 
 static void dma_snd_timer_stop(struct msgdma_data* mydev)
 {
     dbg_timer("%s", __func__);
     hrtimer_cancel(&mydev->hr_timer);
-    //del_timer(&mydev->timer);
 }
 
 enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer)
@@ -196,8 +192,6 @@ enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer)
     hrtimer_forward_now(timer, ms_to_ktime(DMA_TX_PERIOD_MS));
 
     dma_snd_fillbuf(mydev);
-    /* RESTART the timer */
-    //dma_snd_timer_start(mydev);
     return HRTIMER_RESTART;
 }
 
@@ -430,8 +424,6 @@ static int dma_snd_probe(struct platform_device* pdev)
         return ret;
     }
 
-    data->rd_in_progress = 0;
-    init_waitqueue_head(&data->rd_complete_wq);
     ret = dma_snd_register_chrdev(data); // TODO: remove char device totally, leave this driver just as an ALSA soundcard!!!
     if (ret < 0)
         return ret;

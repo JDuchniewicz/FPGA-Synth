@@ -10,7 +10,6 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
-//#include <linux/time.h>
 #include <linux/jiffies.h>
 #include <linux/hrtimer.h>
 #include <sound/core.h>
@@ -22,7 +21,6 @@
 #define DEV_NAME            "dma_snd" // later rethink this name (maybe dma_vosc or fpga_vosc)?
 
 #define MSGDMA_MAP_SIZE     0x30
-#define MSGDMA_MAX_TX_LEN   (1 << 12) // 4 KB -> this is half the FIFO buffer in FPGA * sizeof(one_sample) in bytes
 #define DMA_BUF_SIZE        (1 << 20) // 1 MB -> how big the buffer allocated by the driver is (max onetime buffer fill without reading)
 
 /* ALSA constraints for efficient communication
@@ -33,10 +31,6 @@
  *  Buffer -> holds some periods in ring-like fashion, PCM reads from it
  */
 
-/*
-#define TX_TIMEOUT          HZ // 1 second
-#define DMA_TX_FREQ         HZ / 100 // every 10 ms
-*/
 #define DMA_TX_PERIOD_MS    10 // 10ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
@@ -127,9 +121,6 @@ struct msgdma_data {
     void* dma_buf_rd;
     dma_addr_t dma_buf_rd_handle;
 
-    wait_queue_head_t rd_complete_wq;
-    int rd_in_progress;
-
     // to be removed?
     struct class *cl;
 
@@ -141,7 +132,6 @@ struct msgdma_data {
     /* flags */
     unsigned int running;
     /* timer stuff */
-    //struct timer_list timer;
     struct hrtimer hr_timer;
 
     struct snd_pcm_substream* substream; 
