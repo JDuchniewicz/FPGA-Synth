@@ -11,7 +11,7 @@ module synthesizer_top_tb;
 	reg [15:0] r_data;
 	
 	// out
-	wire [15:0] w_signal;
+	wire [23:0] w_signal;
 	wire [31:0] avalon_write_data, avalon_read_data, aso_read_data;
 	wire w_aso_valid;
 	wire dac_out;
@@ -39,7 +39,7 @@ module synthesizer_top_tb;
 		
 		#20 // stabilization wait (maybe shorter)
 	@ (negedge clk); //use negedge here because at posedge we make changes in module
-	/*
+	
 	// TESTS FOR SINGLE NOTES STABILITY
 
 	$display("[%t] Start single note - G6", $time);
@@ -53,7 +53,7 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#1
 	write = 1'b0;
-	*/
+	
 	/*
 	// TESTS FOR MULTIPLE SIMULTANEOUS NOTES STABILITY
 
@@ -127,6 +127,7 @@ module synthesizer_top_tb;
 	write = 1'b0;
 	#1000
 	*/
+	/*
 	$display("[%t] Start single note - D3", $time);
 	#1
 	r_data = 16'b1_0110010_0000_0000;
@@ -134,13 +135,13 @@ module synthesizer_top_tb;
 	#1
 	write = 1'b0;
 	#1
-	#3000000
+	#30000
 	r_data = 16'b0_0110010_0000_0000;
 	write = 1'b1;
 	#1
 	write = 1'b0;
 	#1000
-	
+	*/
 	/*	
 	$display("[%t] Start single note - F2", $time);
 	#10
