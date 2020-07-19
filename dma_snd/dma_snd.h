@@ -11,7 +11,7 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 //#include <linux/time.h>
-//#include <linux/jiffies.h>
+#include <linux/jiffies.h>
 #include <linux/hrtimer.h>
 #include <sound/core.h>
 #include <sound/control.h>
@@ -40,14 +40,14 @@
 #define DMA_TX_PERIOD_MS    10 // 10ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
-#define PERIOD_SAMPLES      960
+#define PERIOD_SAMPLES      2 * 960 // INCREASING IT TWICE WORKS LIKE A CHARM!
 #define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
-#define MAX_PERIODS_IN_BUF  10
+#define MAX_PERIODS_IN_BUF  100
 #define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF // The size of buffer in kernel, has to be smaller than DMA_BUF_SIZE
 
 static int debug = 0;
 #undef dbg
-#define dbg(format, arg...) do { if (debug == 1) pr_info(": " format "\n", ##arg); } while (0)
+#define dbg(format, arg...) do { if (debug) pr_info(": " format "\n", ##arg); } while (0)
 #define dbg_info(format, arg...) do { if (debug == 2) pr_info(": " format "\n", ##arg); } while (0)
 #define dbg_timer(format, arg...) do { if (debug == 3) pr_info(": " format "\n", ##arg); } while (0)
 

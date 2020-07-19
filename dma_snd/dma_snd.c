@@ -50,6 +50,7 @@ static void dma_snd_push_descr(
 static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
 {
     struct msgdma_data* mydev = substr->private_data;
+    struct timespec time;
     dbg("%s", __func__);
 
     dma_snd_reset(mydev->msgdma0_reg);
@@ -65,9 +66,11 @@ static int dma_snd_pcm_open(struct snd_pcm_substream* substr)
     mydev->substream = substr;
     substr->runtime->private_data = mydev;
 
+
     /* SETUP timer */
     hrtimer_init(&mydev->hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     mydev->hr_timer.function = &dma_snd_timer_handler;
+    dbg("Resolution: %u secs and %u nsecs", time.tv_sec, time.tv_nsec);
     //setup_timer(&mydev->timer, dma_snd_fillbuf, (unsigned long)mydev);
     mutex_unlock(&mydev->cable_lock);
     return 0;
@@ -160,7 +163,7 @@ static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* substr)
 {
     struct msgdma_data* mydev = substr->private_data; // TODO: change mydev to something more meaningful
     snd_pcm_uframes_t pos = 0;
-    dbg_info("%s", __func__);
+    dbg_timer("%s jiffies %d buf_pos %d", __func__, jiffies_to_msecs(jiffies), mydev->buf_pos);
     pos = bytes_to_frames(substr->runtime, mydev->buf_pos * PERIOD_SIZE_BYTES);
     dbg_info("   dma_snd_pcm_pointer %ld", pos);
     return pos;
@@ -187,7 +190,7 @@ static void dma_snd_timer_stop(struct msgdma_data* mydev)
 enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer)
 {
     struct msgdma_data* mydev = container_of(timer, struct msgdma_data, hr_timer);
-    dbg_timer("%s", __func__);
+    dbg_timer("%s jiffies %d buf_pos %d", __func__, jiffies_to_msecs(jiffies), mydev->buf_pos);
 
     /* update every DMA_TX_FREQ */
     hrtimer_forward_now(timer, ms_to_ktime(DMA_TX_PERIOD_MS));
@@ -248,7 +251,7 @@ static irqreturn_t dma_snd_irq_handler(int irq, void* dev_id)
     struct msgdma_data* data = (struct msgdma_data*)dev_id;
     struct msgdma_reg* msgdma0_reg = data->msgdma0_reg;
 
-    dbg_timer("  jiffies %u DMA device status interrupt %x ", jiffies_to_msecs(jiffies), msgdma0_reg->csr_status);
+    dbg_timer("  jiffies %u DMA device status interrupt %x buf_pos %d", jiffies_to_msecs(jiffies), msgdma0_reg->csr_status, data->buf_pos);
     /* Acknowledge corresponding DMA and wake up whoever is waiting */
     if (ioread32(&msgdma0_reg->csr_status) & IRQ)
     {
