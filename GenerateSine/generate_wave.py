@@ -99,7 +99,7 @@ class Generator:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', choices=['sine'], help='type of wave to generate', required=True)
-    parser.add_argument('-n', choices=['4096', '8192', '16384', '32768'], help='number of samples to be generated', required=True)
+    parser.add_argument('-n', choices=['512', '1024', '2048', '4096', '8192', '16384', '32768'], help='number of samples to be generated', required=True)
     parser.add_argument('-f', help='generate full period instead of quarter', action="store_true")
     parser.add_argument('-g', help='generate verilog ready lines of sequential logic', action="store_true")
     parser.add_argument('-q', help='generate table in Q0.<n> notation', action="store_true")

@@ -3,8 +3,11 @@ try:
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
+    import sounddevice as sd
 except ImportError:
     print("Something did not import")
+
+print(sd.query_devices())
 
 i = 0
 f, ax = plt.subplots(2)
@@ -41,6 +44,7 @@ stream = audio.open(format=FORMAT,
                     channels=CHANNELS,
                     rate=RATE,
                     input=True)
+#                    input_device_index=6)
 
 global keep_going
 keep_going = True
