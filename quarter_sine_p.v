@@ -20,23 +20,22 @@ module quarter_sine_p(input clk,
 		reg valid[2:0];
 		reg[6:0] midi[2:0];
 		
-		reg signed[8:0] r_cur_index_1;
-		reg signed[8:0] r_cur_index_2;
+		reg[8:0]   r_cur_index_1, r_cur_index_2;
 		wire[15:0] w_sine_out_1, w_sine_out_2; // WHY 17 in guide???
 		
 		// next step phase
 		wire[10:0] i_phase_next;
-		reg [12:0] r_phase_frac[1:0][NBANKS-1:0]; // INITIALIZE
+		reg [12:0] r_phase_frac[1:0][NBANKS-1:0];
 		
 		reg signed[15:0] r_mult_1a, r_mult_2a;
-		reg [12:0] 		  r_mult_1b, r_mult_2b;
-		wire signed[28:0] w_result_1, w_result_2;
-		wire signed[28:0] w_result_added;
+		reg [13:0] 		  r_mult_1b, r_mult_2b;
+		wire signed[29:0] w_result_1, w_result_2;
+		wire signed[29:0] w_result_added;
 		
 		// LUTs of size 512 outputting 16 bit sine values to be interpolated
 		quarter_sine_lut slut_1(.i_phase(r_cur_index_1), .o_val(w_sine_out_1)); // difference between them is 2**13 so interpolation distance is 8192
 		quarter_sine_lut slut_2(.i_phase(r_cur_index_2), .o_val(w_sine_out_2));
-		
+		 // 
 		// mult
 		sine_mult mult_1(.dataa(r_mult_1a), .datab(r_mult_1b), .result(w_result_1));
 		sine_mult mult_2(.dataa(r_mult_2a), .datab(r_mult_2b), .result(w_result_2));
@@ -54,8 +53,8 @@ module quarter_sine_p(input clk,
 			r_cur_index_2 = 9'b0;
 			r_mult_1a = 16'b0;
 			r_mult_2a = 16'b0;
-			r_mult_1b = 13'b0;
-			r_mult_2b = 13'b0;
+			r_mult_1b = 14'b0;
+			r_mult_2b = 14'b0;
 			for (i = 0; i < NBANKS; i = i + 1) begin
 				for (j = 0; j < 2; j = j + 1) begin
 					r_negate_1[j][i] = 1'b0;
@@ -80,8 +79,8 @@ module quarter_sine_p(input clk,
 				r_cur_index_2 <= 9'b0;
 				r_mult_1a <= 16'b0;
 				r_mult_2a <= 16'b0;
-				r_mult_1b <= 13'b0;
-				r_mult_2b <= 13'b0;
+				r_mult_1b <= 14'b0;
+				r_mult_2b <= 14'b0;
 				for (i = 0; i < NBANKS; i = i + 1) begin
 					for (j = 0; j < 2; j = j + 1) begin
 						r_negate_1[j][i] <= 1'b0;
@@ -108,7 +107,7 @@ module quarter_sine_p(input clk,
 				end
 				
 				// clock two
-				if (valid[0]) begin // is checking for validity needed?
+				if (valid[0]) begin
 					if (v_idx == 0) begin
 						r_lut_sine_1[NBANKS - 1] <= w_sine_out_1;
 						r_lut_sine_2[NBANKS - 1] <= w_sine_out_2;
@@ -124,11 +123,7 @@ module quarter_sine_p(input clk,
 					end
 				end
 				
-				//clock three // add logic for interpolation of 8192 distance, then multiply and one more cycle of delay until result output
-				
-				//TODO: finish
-				// check bus widths, seems like 2 2K tables are sufficient? 2**11, they are further reduced to 512 so a lot of savings
-				// test it in modelsim then onboard try regular multiplication, but probably lpm mult required
+				//clock three
 				if (valid[1]) begin // output only valid values
 					if (v_idx == 0) begin
 						if (r_negate_1[1][NBANKS - 2])
@@ -141,7 +136,7 @@ module quarter_sine_p(input clk,
 						else
 							r_mult_2a <= r_lut_sine_2[NBANKS - 2];
 							
-						r_mult_1b <= 13_h'2000 - r_phase_frac[1][NBANKS - 2];
+						r_mult_1b <= 14'h2000 - r_phase_frac[1][NBANKS - 2];
 						r_mult_2b <= r_phase_frac[1][NBANKS - 2];
 					end else if (v_idx == 1) begin
 						if (r_negate_1[1][NBANKS - 1])
@@ -154,7 +149,7 @@ module quarter_sine_p(input clk,
 						else
 							r_mult_2a <= r_lut_sine_2[NBANKS - 1];
 							
-						r_mult_1b <= 13_h'2000 - r_phase_frac[1][NBANKS - 1];
+						r_mult_1b <= 14'h2000 - r_phase_frac[1][NBANKS - 1];
 						r_mult_2b <= r_phase_frac[1][NBANKS - 1];
 					end else begin
 						if (r_negate_1[1][v_idx - 2])
@@ -167,20 +162,20 @@ module quarter_sine_p(input clk,
 						else
 							r_mult_2a <= r_lut_sine_2[v_idx - 2];
 							
-						r_mult_1b <= 13_h'2000 - r_phase_frac[1][v_idx - 2];
+						r_mult_1b <= 14'h2000 - r_phase_frac[1][v_idx - 2];
 						r_mult_2b <= r_phase_frac[1][v_idx - 2];
 					end
 				end
 			
 				// clock four -> multiply result
 				if (valid[2]) begin
-						o_sine <= w_result_added[28:5]; // TODO: check width!!! probably +1?
+						o_sine <= w_result_added[29:6]; // TODO: check width!!! probably +1?
 				end else begin
 					o_sine <= 24'b0;
 				end
 				
 				
-				// move valid value //TODC: one more delay!!!
+				// move valid value
 				valid[0] <= i_valid;
 				valid[1] <= valid[0];
 				valid[2] <= valid[1];

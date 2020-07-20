@@ -38,8 +38,8 @@ module sine_mult (
 	result);
 
 	input	[15:0]  dataa;
-	input	[12:0]  datab;
-	output	[28:0]  result;
+	input	[13:0]  datab;
+	output	[29:0]  result;
 
 endmodule
 
@@ -57,8 +57,8 @@ endmodule
 // Retrieval info: PRIVATE: USE_MULT NUMERIC "1"
 // Retrieval info: PRIVATE: ValidConstant NUMERIC "0"
 // Retrieval info: PRIVATE: WidthA NUMERIC "16"
-// Retrieval info: PRIVATE: WidthB NUMERIC "13"
-// Retrieval info: PRIVATE: WidthP NUMERIC "29"
+// Retrieval info: PRIVATE: WidthB NUMERIC "14"
+// Retrieval info: PRIVATE: WidthP NUMERIC "30"
 // Retrieval info: PRIVATE: aclr NUMERIC "0"
 // Retrieval info: PRIVATE: clken NUMERIC "0"
 // Retrieval info: PRIVATE: new_diagram STRING "1"
@@ -68,14 +68,14 @@ endmodule
 // Retrieval info: CONSTANT: LPM_REPRESENTATION STRING "SIGNED"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "LPM_MULT"
 // Retrieval info: CONSTANT: LPM_WIDTHA NUMERIC "16"
-// Retrieval info: CONSTANT: LPM_WIDTHB NUMERIC "13"
-// Retrieval info: CONSTANT: LPM_WIDTHP NUMERIC "29"
+// Retrieval info: CONSTANT: LPM_WIDTHB NUMERIC "14"
+// Retrieval info: CONSTANT: LPM_WIDTHP NUMERIC "30"
 // Retrieval info: USED_PORT: dataa 0 0 16 0 INPUT NODEFVAL "dataa[15..0]"
-// Retrieval info: USED_PORT: datab 0 0 13 0 INPUT NODEFVAL "datab[12..0]"
-// Retrieval info: USED_PORT: result 0 0 29 0 OUTPUT NODEFVAL "result[28..0]"
+// Retrieval info: USED_PORT: datab 0 0 14 0 INPUT NODEFVAL "datab[13..0]"
+// Retrieval info: USED_PORT: result 0 0 30 0 OUTPUT NODEFVAL "result[29..0]"
 // Retrieval info: CONNECT: @dataa 0 0 16 0 dataa 0 0 16 0
-// Retrieval info: CONNECT: @datab 0 0 13 0 datab 0 0 13 0
-// Retrieval info: CONNECT: result 0 0 29 0 @result 0 0 29 0
+// Retrieval info: CONNECT: @datab 0 0 14 0 datab 0 0 14 0
+// Retrieval info: CONNECT: result 0 0 30 0 @result 0 0 30 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL sine_mult.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL sine_mult.inc FALSE
 // Retrieval info: GEN_FILE: TYPE_NORMAL sine_mult.cmp FALSE
