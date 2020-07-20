@@ -13,7 +13,7 @@ module bank_manager_p(input clk,
 	
 	wire 		w_pb_valid, w_qs_valid, w_svf_valid;
 	wire signed[23:0] w_qs_out, w_svf_out;
-	wire [15:0] w_pb_out;
+	wire [23:0] w_pb_out;
 	wire[6:0] w_pb_o_midi, w_qs_o_midi, w_svf_o_midi;
 	// midi information is passed each cycle ( optimize - just collapse busses)
 

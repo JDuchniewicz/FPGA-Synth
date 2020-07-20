@@ -6,7 +6,7 @@ module phase_bank_p(input clk,
 						input[6:0] i_midi,
 						output reg[6:0] o_midi,
 						output reg o_valid, 
-						output reg[15:0] o_phase);
+						output reg[23:0] o_phase);
 		parameter NBANKS = 10;
 		
 		// for now holding 24 bits, feeding LUT with only 16 upper bits of bank -> losing precision but frequency should be right
@@ -39,7 +39,7 @@ module phase_bank_p(input clk,
 			end else if (clk_en) begin
 				if (i_midi !== 7'h0) begin
 					phase_banks[v_idx] <= phase_banks[v_idx] + w_tw;
-					o_phase <= {phase_banks[v_idx][23:7]}; // output a delayed value (one whole loop)
+					o_phase <= phase_banks[v_idx]; // output a delayed value (one whole loop)
 				end else begin
 					o_phase <= 16'b0;
 				end
