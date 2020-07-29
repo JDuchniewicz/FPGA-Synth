@@ -2,6 +2,7 @@
 
 module quarter_sine_p(input clk,
 							input clk_en,
+							input wav_en,
 							input rst,
 							input[6:0] i_midi,
 							output reg[6:0] o_midi,
@@ -21,7 +22,7 @@ module quarter_sine_p(input clk,
 		reg[6:0] midi[2:0];
 		
 		reg[8:0]   r_cur_index_1, r_cur_index_2;
-		wire[15:0] w_sine_out_1, w_sine_out_2; // WHY 17 in guide???
+		wire[15:0] w_sine_out_1, w_sine_out_2;
 		
 		// next step phase
 		wire[10:0] i_phase_next;
@@ -35,7 +36,7 @@ module quarter_sine_p(input clk,
 		// LUTs of size 512 outputting 16 bit sine values to be interpolated
 		quarter_sine_lut slut_1(.i_phase(r_cur_index_1), .o_val(w_sine_out_1)); // difference between them is 2**13 so interpolation distance is 8192
 		quarter_sine_lut slut_2(.i_phase(r_cur_index_2), .o_val(w_sine_out_2));
-		 // 
+
 		// mult
 		sine_mult mult_1(.dataa(r_mult_1a), .datab(r_mult_1b), .result(w_result_1));
 		sine_mult mult_2(.dataa(r_mult_2a), .datab(r_mult_2b), .result(w_result_2));
@@ -95,7 +96,7 @@ module quarter_sine_p(input clk,
 					midi[i] <= 7'b0;
 				end
 				o_midi <= 7'b0;
-			end else if(clk_en) begin
+			end else if(clk_en && wav_en) begin
 				// clock one
 				if (i_valid) begin
 					r_negate_1[0][v_idx] <= i_phase[23]; // negate or not
@@ -169,7 +170,7 @@ module quarter_sine_p(input clk,
 			
 				// clock four -> multiply result
 				if (valid[2]) begin
-						o_sine <= w_result_added[29:6]; // TODO: check width!!! probably +1?
+					o_sine <= w_result_added[29:6];
 				end else begin
 					o_sine <= 24'b0;
 				end
@@ -191,6 +192,10 @@ module quarter_sine_p(input clk,
 					v_idx <= 0;
 				else
 					v_idx <= v_idx + 1;
+			end else if(!wav_en) begin
+				o_sine <= 24'b0;
+				o_midi <= 7'b0;
+				o_valid <= 1'b0;
 			end
 		end
 endmodule
