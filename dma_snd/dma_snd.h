@@ -34,7 +34,7 @@
 #define DMA_TX_PERIOD_MS    10 // 10ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
-#define PERIOD_SAMPLES      2 * 960 // INCREASING IT TWICE WORKS LIKE A CHARM!
+#define PERIOD_SAMPLES      960 // INCREASING IT TWICE WORKS LIKE A CHARM!
 #define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
 #define MAX_PERIODS_IN_BUF  100
 #define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF // The size of buffer in kernel, has to be smaller than DMA_BUF_SIZE
