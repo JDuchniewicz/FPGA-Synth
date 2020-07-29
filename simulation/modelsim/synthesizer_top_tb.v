@@ -1,6 +1,6 @@
 // testbench for the top module of synthesizer 
 
-`timescale 10ns/1ns // 1 clock cycle of 100MHz clock is 10ns
+`timescale 1ns/1ns // 1 clock cycle of 100MHz clock is 10ns
 
 module synthesizer_top_tb;
 	// in
@@ -54,6 +54,7 @@ module synthesizer_top_tb;
 	#1
 	write = 1'b0;
 	*/
+	/*
 	$display("[%t] Start single note - E4", $time);
 	#1
 	r_data = 16'b1_1000000_0000_0000;
@@ -70,8 +71,19 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#1
 	write = 1'b0;
-	#10000000
+	#100000 // alot
 	r_data = 16'b0_1110000_0000_0000;
+	write = 1'b1;
+	#1
+	*/
+	$display("[%t] Start single note - E4", $time);
+	#1
+	r_data = 16'b1_1000101_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#50000000
+	r_data = 16'b0_1000101_0000_0000;
 	write = 1'b1;
 	#1
 	/*
