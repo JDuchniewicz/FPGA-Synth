@@ -144,7 +144,7 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     SNDRV_PCM_INFO_INTERLEAVED |
     SNDRV_PCM_INFO_BLOCK_TRANSFER |
     SNDRV_PCM_INFO_MMAP_VALID),
-    .formats            = SNDRV_PCM_FMTBIT_S24_LE, // for now store as 32-bit values with last byte zeroed out //TODO: decide on the correct format
+    .formats            = SNDRV_PCM_FMTBIT_S32_LE, // for now store as 32-bit values with last byte zeroed out //TODO: decide on the correct format
     .rates              = SNDRV_PCM_RATE_96000,
     .rate_min           = 96000,
     .rate_max           = 96000,
