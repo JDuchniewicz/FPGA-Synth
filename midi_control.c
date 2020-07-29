@@ -113,10 +113,22 @@ static void handle_event(snd_seq_event_t* ev)
             break;
         case SND_SEQ_EVENT_NOTEOFF:
         {
-            printf("Note off %2d, note %d, velocity %d\n",
+            printf("Note off            %2d, note %d, velocity %d\n",
                     ev->data.note.channel, ev->data.note.note, ev->data.note.velocity);
             command = create_fpga_command(0, ev->data.note.note, ev->data.note.velocity);
             write_device(&command);
+            break;
+        }
+        case SND_SEQ_EVENT_CONTROLLER:
+        {
+            printf("Controller          %2d, param %d, value %d\n",
+                    ev->data.control.channel, ev->data.control.param, ev->data.control.value);
+            // Hardcoded param == 108 and value equal 127
+            if (ev->data.control.param == 108 && ev->data.control.value == 127)
+            {
+                command = create_fpga_command(1, 0, 0);
+                write_device(&command);
+            }
             break;
         }
         default:
