@@ -40,7 +40,7 @@ module synthesizer_top_p(input clk,
 	fifo mixed_samples_fifo(.data(r_fifo_in), .rdclk(clk), .rdreq(r_rd_req), .wrclk(clk), .wrreq(r_wr_req), .q(w_fifo_out), .rdempty(w_empty), .wrfull(w_full));
 	
 	mixer mix(.clk(clk), .clk_en(clk_en), .rst(reset), .i_data(w_osignal >>> 1), .o_mixed(w_mixed_sample), .o_rdy(w_rdy)); // if ADSR is to be implemented in Verilog, then it should be before mixing it
-	dac_dsm2_top dac(.din(r_dac_in), .dout(o_dac_out), .clk(w_clk_96k_en), .n_rst(~reset)); // DAC MASH from WZab
+	dac_dsm2_top dac(.din(r_dac_in), .dout(o_dac_out), .clk(clk), .n_rst(~reset)); // DAC MASH from WZab
 	
 	// stages of pipeline:
 	// generation -> pipeline

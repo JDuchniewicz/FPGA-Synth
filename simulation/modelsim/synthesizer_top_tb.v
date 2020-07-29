@@ -76,16 +76,18 @@ module synthesizer_top_tb;
 	write = 1'b1;
 	#1
 	*/
+	/*
 	$display("[%t] Start single note - E4", $time);
 	#1
 	r_data = 16'b1_1000101_0000_0000;
 	write = 1'b1;
 	#1
 	write = 1'b0;
-	#50000000
+	#5000
 	r_data = 16'b0_1000101_0000_0000;
 	write = 1'b1;
 	#1
+	*/
 	/*
 	// TESTS FOR MULTIPLE SIMULTANEOUS NOTES STABILITY
 
@@ -365,6 +367,33 @@ module synthesizer_top_tb;
 	write = 1'b0;
 	#1500								// total 150ns
 	*/
+	
+	// TESTS FOR WAVE SWITCHING
+	$display("[%t] Start single note - E4", $time);
+	#1
+	r_data = 16'b1_1000101_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#500000
+	$display("[%t] Change underlying wave to square", $time);
+	#1
+	r_data = 16'b1_0000000_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#5000000
+	$display("[%t] Change underlying wave back to sine", $time);
+	#1
+	r_data = 16'b1_0000000_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#5000000
+	$display("[%t] Stop single note - E4", $time);
+	r_data = 16'b0_1000101_0000_0000;
+	write = 1'b1;
+	#1
 	$display("[%t] Done", $time);
 	$finish; // not testing velocity for now
 	end
