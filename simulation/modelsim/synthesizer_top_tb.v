@@ -390,7 +390,14 @@ module synthesizer_top_tb;
 	#1
 	write = 1'b0;
 	#2000000
-	$display("[%t] Change underlying wave to sine", $time);
+	$display("[%t] Change underlying wave to triangle", $time);
+	#1
+	r_data = 16'b1_0000000_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#2000000
+	$display("[%t] Change underlying wave back to sine", $time);
 	#1
 	r_data = 16'b1_0000000_0000_0000;
 	write = 1'b1;
