@@ -16,7 +16,9 @@ class Generator:
 
     def generate(self):
         if 'sine' in self.args.t:
-            generate_sine()
+            self.generate_sine()
+        elif 'triangle' or 'sawtooth' in self.args.t:
+            self.generate_ramp()
 
     def generate_sine(self):
         out = open(self.args.d, 'w')
@@ -27,6 +29,26 @@ class Generator:
                 self.generate_qnotation_sine(out)
             else:
                 self.generate_quarter_sine(out)
+
+    # generate a quarter of a triangle OR
+    # generate the positive half of the sawtooth
+    def generate_ramp(self):
+        out = open(self.args.d, 'w')
+        self.output_width -= 1
+        for sample in range(self.table_size):
+            val = int(sample / self.table_size * 2**self.output_width)
+            val_bin = '{0:0{1}b}'.format(val, self.output_width) # format specifier
+
+            if self.args.g is not False:
+                idx_hex = '{0:0{1}x}'.format(sample, self.table_size_hex_len)
+
+                lhs = "{0}'h{1}".format(self.input_width, idx_hex)
+                rhs = " \t:\to_val <= {0}'b0{1};\n".format(self.output_width + 1, val_bin) #leading zero because it is positive only
+
+                lhs += rhs
+                out.write(lhs)
+            else:
+                out.write(str(val) + '\n')
                 
     # always generate quarter of a wave for Q format
     def generate_qnotation_sine(self, out):
@@ -98,7 +120,7 @@ class Generator:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', choices=['sine'], help='type of wave to generate', required=True)
+    parser.add_argument('-t', choices=['sine', 'triangle', 'sawtooth'], help='type of wave to generate', required=True)
     parser.add_argument('-n', choices=['512', '1024', '2048', '4096', '8192', '16384', '32768'], help='number of samples to be generated', required=True)
     parser.add_argument('-f', help='generate full period instead of quarter', action="store_true")
     parser.add_argument('-g', help='generate verilog ready lines of sequential logic', action="store_true")
@@ -107,7 +129,7 @@ def main():
     parser.add_argument('-r', default='16', help='output bits width')
     args = parser.parse_args()
     gen = Generator(args)     
-    gen.generate_sine()
+    gen.generate()
 
 if __name__ == "__main__":
     main()

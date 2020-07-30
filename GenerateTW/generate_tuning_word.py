@@ -5,7 +5,7 @@ class Generator:
     def __init__(self, args):
         self.args = args
         self.tw_bits = int(args.n)
-        self.sampling_speed = int(self.args.s)
+        self.sampling_speed = float(self.args.s)
 
     def generate_tw(self):
         out = open(self.args.d, 'w')
@@ -13,7 +13,7 @@ class Generator:
             print("number " + str(i))
             freq = 2**((i - 69)/12) * 440
             print("freq " + str(freq))
-            tw = int(freq * 2 ** self.tw_bits / (self.sampling_speed * 10 ** 6))
+            tw = int(freq * 2 ** self.tw_bits / (self.sampling_speed * 10 ** 3))
             #tw = 2 ** (self.tw_bits - 2) * freq / (self.sampling_speed * 10**6) # It overflows for big numbers (more than 16 bits??)
             print("tw " + str(tw))
             #rescaled_tw = round((tw * 2 ** self.tw_bits) / (math.pi * 2))
@@ -31,7 +31,7 @@ class Generator:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', help='number of bits used for sine calculation', required=True)
-    parser.add_argument('-s', help='sampling speed in MHz', required=True)
+    parser.add_argument('-s', help='sampling speed in kHz', required=True)
     parser.add_argument('-q', help='generate verilog ready lines of sequential logic', action="store_true")
     parser.add_argument('-d', help='output file', required=True)
     args = parser.parse_args()
