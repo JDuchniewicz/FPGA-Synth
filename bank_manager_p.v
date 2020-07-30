@@ -7,18 +7,18 @@ module bank_manager_p(input clk,
 							  output reg signed[23:0] o_signal);
 							  
 	parameter NBANKS = 10;
-	localparam SINE = 2'b00, SQUARE = 2'b01;
+	localparam SINE = 2'b00, SQUARE = 2'b01, SAWTOOTH = 2'b10;
 	
 	reg[6:0]				midi_vals[NBANKS-1:0];
 	reg[6:0]	   		r_cur_midi;
 	
 	reg[1:0] 			waveform;
-	reg					r_sine_en, r_square_en;
+	reg					r_sine_en, r_square_en, r_sawtooth_en;
 	
-	wire 					w_pb_valid, w_wave_valid, w_qs_valid, w_square_valid, w_svf_valid, w_signal_valid;
-	wire signed[23:0] w_wave_out, w_square_out, w_qs_out, w_svf_out, w_signal_out;
+	wire 					w_pb_valid, w_wave_valid, w_qs_valid, w_square_valid, w_sawtooth_valid, w_svf_valid, w_signal_valid;
+	wire signed[23:0] w_wave_out, w_square_out, w_sawtooth_out, w_qs_out, w_svf_out, w_signal_out;
 	wire [23:0] 		w_pb_out;
-	wire[6:0] 			w_pb_o_midi, w_wave_o_midi, w_qs_o_midi, w_square_o_midi, w_svf_o_midi;
+	wire[6:0] 			w_pb_o_midi, w_wave_o_midi, w_qs_o_midi, w_square_o_midi, w_sawtooth_o_midi, w_svf_o_midi;
 
 	wire 		  			w_cmd;
 	wire[6:0]  			w_midi;
@@ -56,6 +56,17 @@ module bank_manager_p(input clk,
 							 .i_valid(w_pb_valid),
 							 .o_valid(w_square_valid),
 							 .o_square(w_square_out));
+							 
+	sawtooth_wave sawtooth(.clk(clk),
+								  .clk_en(clk_en),
+								  .wav_en(r_sawtooth_en),
+								  .rst(reset),
+								  .i_midi(w_pb_o_midi),
+								  .o_midi(w_sawtooth_o_midi),
+								  .i_phase(w_pb_out),
+								  .i_valid(w_pb_valid),
+								  .o_valid(w_sawtooth_valid),
+								  .o_sawtooth(w_sawtooth_out));
 
 	state_variable_filter_iir_p SVF(.clk(clk),
 											  .clk_en(clk_en), 
@@ -68,9 +79,9 @@ module bank_manager_p(input clk,
 											  .o_filtered(w_svf_out));
 								
 								
-	assign w_wave_out = w_qs_out; // TODO: extend with other waves
-	assign w_wave_o_midi = w_qs_o_midi;
-	assign w_wave_valid = w_qs_valid;
+	assign w_wave_out = w_qs_out | w_sawtooth_out; // TODO: extend with other waves
+	assign w_wave_o_midi = w_qs_o_midi | w_sawtooth_o_midi;
+	assign w_wave_valid = w_qs_valid | w_sawtooth_valid;
 	
 	// bypass of SVF for square wave
 	assign w_signal_valid = w_svf_valid | w_square_valid;
@@ -87,6 +98,7 @@ module bank_manager_p(input clk,
 		waveform = 2'b0;
 		r_sine_en = 1'b1;
 		r_square_en = 1'b0;
+		r_sawtooth_en = 1'b0;
 		o_signal = 24'b0;
 		v_idx = 0;
 	end
@@ -101,20 +113,28 @@ module bank_manager_p(input clk,
 			waveform <= 2'b0;
 			r_sine_en <= 1'b1;
 			r_square_en <= 1'b0;
+			r_sawtooth_en <= 1'b0;
 			o_signal <= 24'b0;
 			v_idx <= 0;
 		// handle commands
 		end else begin
 			if (w_cmd == 1) begin
 				if (w_midi == 7'b0 && w_velocity == 8'b0) begin // CHANGE_WAVE
-					if (waveform == SQUARE) begin // turn on sine
+					if (waveform == SAWTOOTH) begin // turn on sine
 						waveform <= SINE;
 						r_sine_en <= 1'b1;
 						r_square_en <= 1'b0;
+						r_sawtooth_en <= 1'b0;
 					end else if (waveform == SINE) begin // turn on square
 						waveform <= SQUARE;
 						r_sine_en <= 1'b0;
 						r_square_en <= 1'b1;
+						r_sawtooth_en <= 1'b0;
+					end else if (waveform == SQUARE) begin
+						waveform <= SAWTOOTH;
+						r_sine_en <= 1'b0;
+						r_square_en <= 1'b0;
+						r_sawtooth_en <= 1'b1;
 					end else begin
 						waveform <= waveform + 2'b01; // just increment //TODO: not implemented
 					end
