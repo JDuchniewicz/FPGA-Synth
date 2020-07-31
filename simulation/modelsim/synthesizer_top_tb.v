@@ -367,7 +367,6 @@ module synthesizer_top_tb;
 	write = 1'b0;
 	#1500								// total 150ns
 	*/
-	
 	// TESTS FOR WAVE SWITCHING
 	$display("[%t] Start single note - E4", $time);
 	#1
@@ -408,7 +407,88 @@ module synthesizer_top_tb;
 	r_data = 16'b0_1000101_0000_0000;
 	write = 1'b1;
 	#1
+	
+	/*
+	// TESTS FOR POLYPYPHONY
+	$display("[%t] Start single note - E4", $time);
+	#1
+	r_data = 16'b1_1000101_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - F4", $time);
+	#1
+	r_data = 16'b1_1000110_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - G4", $time);
+	#1
+	r_data = 16'b1_1000111_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - A4", $time);
+	#1
+	r_data = 16'b1_1001000_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - H4", $time);
+	#1
+	r_data = 16'b1_1001001_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - C5", $time);
+	#1
+	r_data = 16'b1_1001010_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - D5", $time);
+	#1
+	r_data = 16'b1_1001011_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - F5", $time);
+	#1
+	r_data = 16'b1_1001100_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - G5", $time);
+	#1
+	r_data = 16'b1_1001101_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#1000
+	$display("[%t] Start single note - A5", $time);
+	#1
+	r_data = 16'b1_1001110_0000_0000;
+	write = 1'b1;
+	#1
+	write = 1'b0;
+
+	#500000
+	$display("[%t] Turn off all", $time);
+	r_data = 16'b0_1111111_0000_0000; // STOP_ALL - why not working? all other are triggered, weird...
+	write = 1'b1;
+	#1
+	write = 1'b0;
+	#200000		
 	$display("[%t] Done", $time);
+	*/
 	$finish; // not testing velocity for now
 	end
 	
