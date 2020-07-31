@@ -15,8 +15,8 @@ module bank_manager_p(input clk,
 	reg[1:0] 			waveform;
 	reg					r_sine_en, r_square_en, r_sawtooth_en, r_triangle_en;
 	
-	wire 					w_pb_valid, w_wave_valid, w_qs_valid, w_square_valid, w_sawtooth_valid, w_triangle_valid, w_svf_valid, w_signal_valid;
-	wire signed[23:0] w_wave_out, w_square_out, w_sawtooth_out, w_triangle_out, w_qs_out, w_svf_out, w_signal_out;
+	wire 					w_pb_valid, w_wave_valid, w_qs_valid, w_square_valid, w_sawtooth_valid, w_triangle_valid, w_svf_valid;
+	wire signed[23:0] w_wave_out, w_square_out, w_sawtooth_out, w_triangle_out, w_qs_out, w_svf_out;
 	wire [23:0] 		w_pb_out;
 	wire[6:0] 			w_pb_o_midi, w_wave_o_midi, w_qs_o_midi, w_square_o_midi, w_sawtooth_o_midi, w_triangle_o_midi, w_svf_o_midi;
 
@@ -93,10 +93,6 @@ module bank_manager_p(input clk,
 	assign w_wave_out = w_qs_out | w_sawtooth_out | w_triangle_out;
 	assign w_wave_o_midi = w_qs_o_midi | w_sawtooth_o_midi | w_triangle_o_midi;
 	assign w_wave_valid = w_qs_valid | w_sawtooth_valid | w_triangle_valid;
-	
-	// bypass of SVF for square wave
-	assign w_signal_valid = w_svf_valid | w_square_valid;
-	assign w_signal_out = w_svf_out | (w_square_out >>> 1);
 	
 	integer v_idx; // every element of the pipeline is delayed in terms of id
 	integer i;
@@ -178,7 +174,7 @@ module bank_manager_p(input clk,
 					midi_vals[8] <= w_midi;
 				end else if (midi_vals[9] == 7'h0) begin
 					midi_vals[9] <= w_midi;
-				end // failure to playback yet another sound should be signalled to user!
+				end // failure to playback yet another sound should be signalled to user?
 			end else if (w_cmd == 0) begin
 				if (w_midi == 7'h7f) begin // STOP_ALL
 					for (i = 0; i < NBANKS; i = i + 1) begin
@@ -211,19 +207,14 @@ module bank_manager_p(input clk,
 			if (clk_en) begin
 				r_cur_midi <= midi_vals[v_idx]; // if 7'h0 then invalid
 				
-				// change when adding more elements to pipeline
-				if (w_signal_valid) begin
-					o_signal <= w_signal_out;
+				if (w_svf_valid) begin
+					o_signal <= w_svf_out;
+				end else if (w_square_valid) begin // Bypass the SVF for square
+					o_signal <= w_square_out >>> 1;
 				end else begin
 					o_signal <= 24'b0;
 				end
-				/* FOR DISABLING LP
-				if (w_qs_valid) begin // TODO LP turned off, changed from w_svf_valid
-					o_signal <= w_qs_out; // w_svf_out
-				end else begin
-					o_signal <= 24'b0;
-				end
-				*/
+
 				if (v_idx == NBANKS - 1)
 					v_idx <= 0;
 				else
