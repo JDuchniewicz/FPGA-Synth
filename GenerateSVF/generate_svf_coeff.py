@@ -14,7 +14,6 @@ class Generator:
             print(i)
             freq = 2**((i - 69)/12) * 440
             print(freq)
-            # map freq to cutoff frequency (2 guys' curve seems to be the best choice, experimented with others, cite them)
             curve_val = ((math.exp((2.5 * i)/127) - 1)/(math.exp(2.5) - 1))
             print(curve_val)
             cutoff_freq = curve_val * 32*10**3 # rescale to 1-32KHz
