@@ -48,7 +48,7 @@ module synthesizer_top_p(input clk,
 	mixer mix(.clk(clk), 
 				 .clk_en(clk_en), 
 				 .rst(reset), 
-				 .i_data(w_osignal >>> 1), 
+				 .i_data(w_osignal >>> 2), 
 				 .o_mixed(w_mixed_sample), 
 				 .o_rdy(w_rdy));
 				 
