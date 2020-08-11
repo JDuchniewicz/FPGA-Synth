@@ -29,7 +29,7 @@ module quarter_sine_p(input clk,
 		reg [12:0] r_phase_frac[1:0][NBANKS-1:0];
 		
 		reg signed[15:0] r_mult_1a, r_mult_2a;
-		reg [13:0] 		  r_mult_1b, r_mult_2b;
+		reg signed[14:0] 		  r_mult_1b, r_mult_2b;
 		wire signed[29:0] w_result_1, w_result_2;
 		wire signed[29:0] w_result_added;
 		
@@ -54,8 +54,8 @@ module quarter_sine_p(input clk,
 			r_cur_index_2 = 9'b0;
 			r_mult_1a = 16'b0;
 			r_mult_2a = 16'b0;
-			r_mult_1b = 14'b0;
-			r_mult_2b = 14'b0;
+			r_mult_1b = 15'b0;
+			r_mult_2b = 15'b0;
 			for (i = 0; i < NBANKS; i = i + 1) begin
 				for (j = 0; j < 2; j = j + 1) begin
 					r_negate_1[j][i] = 1'b0;
@@ -80,8 +80,8 @@ module quarter_sine_p(input clk,
 				r_cur_index_2 <= 9'b0;
 				r_mult_1a <= 16'b0;
 				r_mult_2a <= 16'b0;
-				r_mult_1b <= 14'b0;
-				r_mult_2b <= 14'b0;
+				r_mult_1b <= 15'b0;
+				r_mult_2b <= 15'b0;
 				for (i = 0; i < NBANKS; i = i + 1) begin
 					for (j = 0; j < 2; j = j + 1) begin
 						r_negate_1[j][i] <= 1'b0;
@@ -136,8 +136,8 @@ module quarter_sine_p(input clk,
 							r_mult_2a <= -r_lut_sine_2[NBANKS - 2];
 						else
 							r_mult_2a <= r_lut_sine_2[NBANKS - 2];
-							
-						r_mult_1b <= 14'h2000 - r_phase_frac[1][NBANKS - 2];
+						
+						r_mult_1b <= 15'sh2000 - r_phase_frac[1][NBANKS - 2];
 						r_mult_2b <= r_phase_frac[1][NBANKS - 2];
 					end else if (v_idx == 1) begin
 						if (r_negate_1[1][NBANKS - 1])
@@ -150,7 +150,7 @@ module quarter_sine_p(input clk,
 						else
 							r_mult_2a <= r_lut_sine_2[NBANKS - 1];
 							
-						r_mult_1b <= 14'h2000 - r_phase_frac[1][NBANKS - 1];
+						r_mult_1b <= 15'sh2000 - r_phase_frac[1][NBANKS - 1];
 						r_mult_2b <= r_phase_frac[1][NBANKS - 1];
 					end else begin
 						if (r_negate_1[1][v_idx - 2])
@@ -163,14 +163,14 @@ module quarter_sine_p(input clk,
 						else
 							r_mult_2a <= r_lut_sine_2[v_idx - 2];
 							
-						r_mult_1b <= 14'h2000 - r_phase_frac[1][v_idx - 2];
+						r_mult_1b <= 15'sh2000 - r_phase_frac[1][v_idx - 2];
 						r_mult_2b <= r_phase_frac[1][v_idx - 2];
 					end
 				end
 			
 				// clock four -> multiply result
 				if (valid[2]) begin
-					o_sine <= w_result_added[29:6];
+					o_sine <= w_result_added >>> 6;
 				end else begin
 					o_sine <= 24'b0;
 				end

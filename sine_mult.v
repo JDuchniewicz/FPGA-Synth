@@ -43,7 +43,7 @@ module sine_mult (
 	result);
 
 	input	[15:0]  dataa;
-	input	[13:0]  datab;
+	input	[14:0]  datab;
 	output	[29:0]  result;
 
 	wire [29:0] sub_wire0;
@@ -63,7 +63,7 @@ module sine_mult (
 		lpm_mult_component.lpm_representation = "SIGNED",
 		lpm_mult_component.lpm_type = "LPM_MULT",
 		lpm_mult_component.lpm_widtha = 16,
-		lpm_mult_component.lpm_widthb = 14,
+		lpm_mult_component.lpm_widthb = 15,
 		lpm_mult_component.lpm_widthp = 30;
 
 
@@ -83,7 +83,7 @@ endmodule
 // Retrieval info: PRIVATE: USE_MULT NUMERIC "1"
 // Retrieval info: PRIVATE: ValidConstant NUMERIC "0"
 // Retrieval info: PRIVATE: WidthA NUMERIC "16"
-// Retrieval info: PRIVATE: WidthB NUMERIC "14"
+// Retrieval info: PRIVATE: WidthB NUMERIC "15"
 // Retrieval info: PRIVATE: WidthP NUMERIC "30"
 // Retrieval info: PRIVATE: aclr NUMERIC "0"
 // Retrieval info: PRIVATE: clken NUMERIC "0"
@@ -94,10 +94,10 @@ endmodule
 // Retrieval info: CONSTANT: LPM_REPRESENTATION STRING "SIGNED"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "LPM_MULT"
 // Retrieval info: CONSTANT: LPM_WIDTHA NUMERIC "16"
-// Retrieval info: CONSTANT: LPM_WIDTHB NUMERIC "14"
+// Retrieval info: CONSTANT: LPM_WIDTHB NUMERIC "15"
 // Retrieval info: CONSTANT: LPM_WIDTHP NUMERIC "30"
 // Retrieval info: USED_PORT: dataa 0 0 16 0 INPUT NODEFVAL "dataa[15..0]"
-// Retrieval info: USED_PORT: datab 0 0 14 0 INPUT NODEFVAL "datab[13..0]"
+// Retrieval info: USED_PORT: datab 0 0 15 0 INPUT NODEFVAL "datab[13..0]"
 // Retrieval info: USED_PORT: result 0 0 30 0 OUTPUT NODEFVAL "result[29..0]"
 // Retrieval info: CONNECT: @dataa 0 0 16 0 dataa 0 0 16 0
 // Retrieval info: CONNECT: @datab 0 0 14 0 datab 0 0 14 0
