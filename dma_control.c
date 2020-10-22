@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 1024 
+#define BUFFER_SIZE 4096 
 
 static volatile sig_atomic_t stop = 0;
 static int dma_snd_fd = 0;
@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     FILE* destination;
     ssize_t bytes;
     dma_snd_fd = open("/dev/dma_snd", O_RDONLY);
-    destination = fopen("/root/tempfile", "w");
+    destination = fopen("/root/tempfile", "w+");
     if (!destination)
         fatal("Could not open the destination file! errno: %d", errno);
     if (dma_snd_fd < 0)
