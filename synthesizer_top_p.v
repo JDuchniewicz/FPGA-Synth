@@ -1,6 +1,7 @@
 // Top level module for Synthesizer project
 
 module synthesizer_top_p(input clk,
+						 input clk_50,
 						 input reset,
 						 input avs_s0_write,
 						 input avs_s0_read,
@@ -54,7 +55,7 @@ module synthesizer_top_p(input clk,
 				 
 	dac_dsm2_top dac(.din(r_dac_in),
 						  .dout(o_dac_out), 
-						  .clk(clk), 
+						  .clk(clk_50), 
 						  .n_rst(~reset));
 	initial begin
 		r_oneshot_data = 16'b0;
