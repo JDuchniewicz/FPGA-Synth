@@ -4,12 +4,12 @@
 module mixer(input clk,
 				 input clk_en,
 				 input rst,
-				 input signed[23:0] i_data,
+				 input signed[22:0] i_data, // 24 or how many?
 				 output reg signed[23:0] o_mixed,
 				 output reg o_rdy);
 	
 	// Because verilog does not like signed numbers, these have to be explicite signed regs
-	reg signed[23:0] MAX_SIGNED = {1'sb0, {23{1'sb1}}}; // check if really signed!
+	reg signed[23:0] MAX_SIGNED = {1'sb0, {23{1'sb1}}};
 	reg signed[23:0] MIN_SIGNED = {1'sb1, {23{1'sb0}}};
 	
 	reg signed[27:0] r_mixed, r_overflow;
