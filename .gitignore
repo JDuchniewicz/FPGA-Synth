@@ -2,3 +2,9 @@ db/**
 incremental_db/**
 *.img
 *.tar
+*.code-workspace
+.vscode/*
+**.ko
+**.o.*
+**.symvers
+**.order
