@@ -42,6 +42,7 @@ module phase_bank_p(input clk,
 					o_phase <= phase_banks[v_idx]; // output a delayed value (one whole loop)
 				end else begin
 					o_phase <= 16'b0;
+					phase_banks[v_idx] <= 24'b0;
 				end
 					
 				o_valid <= (i_midi == 7'h0) ? 1'b0 : 1'b1;
