@@ -34,7 +34,7 @@
 #define DMA_TX_PERIOD_MS    10 // 10ms
 
 // assuming IRQ every 10 ms i.e. 100 in a second
-#define PERIOD_SAMPLES      960 // INCREASING IT TWICE WORKS LIKE A CHARM!
+#define PERIOD_SAMPLES      960
 #define PERIOD_SIZE_BYTES   4 * PERIOD_SAMPLES
 #define MAX_PERIODS_IN_BUF  100
 #define MIN_PERIODS_IN_BUF  MAX_PERIODS_IN_BUF // The size of buffer in kernel, has to be smaller than DMA_BUF_SIZE
@@ -65,7 +65,7 @@ struct msgdma_reg {
     reg_t desc_len;
     reg_t desc_ctrl;
 
-    /* Response port registers */ // currently not used (can be removed?) // TODO:
+    /* Response port registers */
     reg_t resp_bytes_transferred;
     reg_t resp_term_err;
 };
@@ -144,12 +144,12 @@ static struct snd_pcm_hardware dma_snd_pcm_hw = { // for now prefix everything w
     SNDRV_PCM_INFO_INTERLEAVED |
     SNDRV_PCM_INFO_BLOCK_TRANSFER |
     SNDRV_PCM_INFO_MMAP_VALID),
-    .formats            = SNDRV_PCM_FMTBIT_S32_LE, // for now store as 32-bit values with last byte zeroed out //TODO: decide on the correct format
+    .formats            = SNDRV_PCM_FMTBIT_S32_LE,
     .rates              = SNDRV_PCM_RATE_96000,
     .rate_min           = 96000,
     .rate_max           = 96000,
     .channels_min       = 1,
-    .channels_max       = 1, // can be extended to 2?
+    .channels_max       = 1,
     .buffer_bytes_max   = DMA_BUF_SIZE,
     .period_bytes_min   = PERIOD_SIZE_BYTES, 
     .period_bytes_max   = PERIOD_SIZE_BYTES,
@@ -177,9 +177,9 @@ static int dma_snd_pcm_free(struct msgdma_data* chip);
 static snd_pcm_uframes_t dma_snd_pcm_pointer(struct snd_pcm_substream* ss);
 
 /* timer functions */
-static void dma_snd_timer_start(struct msgdma_data* mydev);
-static void dma_snd_timer_stop(struct msgdma_data* mydev);
-static void dma_snd_fillbuf(struct msgdma_data* mydev);
+static void dma_snd_timer_start(struct msgdma_data* dma_snd_dev);
+static void dma_snd_timer_stop(struct msgdma_data* dma_snd_dev);
+static void dma_snd_fillbuf(struct msgdma_data* dma_snd_dev);
 static enum hrtimer_restart dma_snd_timer_handler(struct hrtimer* timer);
 
 static struct snd_pcm_ops dma_snd_pcm_ops = {
@@ -199,14 +199,14 @@ static struct snd_device_ops snd_dev_ops = {
 
 static const struct file_operations dma_snd_fops = {
     .owner      = THIS_MODULE,
-    .open       = dma_snd_open, //we will not need it if DMA is running constantly, fo now leave as is
+    .open       = dma_snd_open,
     .release    = dma_snd_release,
    // .read       = dma_snd_read,
 };
 
 
 static const struct of_device_id dma_snd_of_match [] = {
-    {.compatible = "altr,msgdma-19.1" }, // check if can freely change the name  in DTS // TODO:
+    {.compatible = "altr,msgdma-19.1" },
     {}
 };
 
@@ -218,4 +218,3 @@ static struct platform_driver dma_snd_driver = {
         .of_match_table = dma_snd_of_match,
     },
 };
-//TODO: once working tweak the naming conventions etc so that it is more meaningful
