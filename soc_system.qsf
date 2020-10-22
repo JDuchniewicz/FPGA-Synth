@@ -617,5 +617,5 @@ set_global_assignment -name SIGNALTAP_FILE MSGDMA_analysis.stp
 set_global_assignment -name SIGNALTAP_FILE ../just_slow_clock.stp
 set_global_assignment -name SIGNALTAP_FILE ../Hardware/synthesizer_top/simulation/modelsim/syn_top_noise_debug.stp
 set_global_assignment -name QIP_FILE sine_mult.qip
-set_global_assignment -name SLD_FILE db/syn_top_noise_debug_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name SLD_FILE db/syn_top_noise_debug_auto_stripped.stp

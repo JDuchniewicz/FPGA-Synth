@@ -225,6 +225,7 @@ module ghrd(
 		//FPGA Partion
 	  .custom_leds_0_leds_leds               (LED),               //             custom_leds_0_leds.leds
 	  .synthesizer_0_dac_out_export  		  (GPIO_0[0]),			 //	synthesizer_0_dac_out.export // conduit
+	  
 	  .dipsw_pio_external_connection_export  ( SW	),  //  dipsw_pio_external_connection.export
 	  .button_pio_external_connection_export ( fpga_debounced_buttons	), // button_pio_external_connection.export
 	  .hps_0_h2f_reset_reset_n               ( hps_fpga_reset_n ),                //                hps_0_h2f_reset.reset_n
