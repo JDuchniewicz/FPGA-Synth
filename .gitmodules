@@ -1,0 +1,12 @@
+[submodule "uboot"]
+	path = atlas_linux_ghrd/software/bootloader/u-boot-socfpga
+	url = https://github.com/altera-opensource/u-boot-socfpga
+    update = checkout 
+[submodule "linux"]
+	path = atlas_linux_ghrd/software/linux-socfpga
+	url = https://github.com/altera-opensource/linux-socfpga
+    update = checkout
+[submodule "buildroot"]
+	path = atlas_linux_ghrd/software/buildroot
+	url = git://git.busybox.net/buildroot
+    update = checkout 
